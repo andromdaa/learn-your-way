@@ -18,3 +18,4 @@ venv/
 build/
 dist/
 docs/artifacts/
+.claude/worktrees
