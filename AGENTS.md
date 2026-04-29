@@ -55,11 +55,22 @@ Rationale for each choice lives in `docs/adr/`.
 Quick commands:
 
 ```bash
+# First-time setup in a fresh checkout / worktree — installs dev
+# tooling (ruff, mypy, pytest-cov) declared in
+# [project.optional-dependencies].dev. Required before any of the
+# commands below; without it `uv run ruff` / `uv run mypy` fail with
+# "Failed to spawn".
+uv sync --extra dev
+
 uv run ruff check .                # lint
 uv run ruff format .               # format
 uv run mypy                        # type-check
 uv run pytest --cov                # tests + coverage
 uv run pre-commit run --all-files  # run all pre-commit hooks
+
+# Fallback for one-off invocations without touching .venv:
+uvx ruff check .
+uvx --with pydantic mypy src/      # mypy needs the pydantic plugin
 ```
 
 ## Working agreement
@@ -102,5 +113,10 @@ When adding a Python dependency:
 3. Commit the updated `pyproject.toml` and `uv.lock` together.
 
 Run commands inside the env via `uv run <cmd>` (e.g. `uv run pytest`,
-`uv run mypy`, `uv run ruff check`). `uv sync --extra dev` materializes
-`.venv/` from the lockfile.
+`uv run mypy`, `uv run ruff check`). `.venv/` is materialized lazily by
+the first `uv run` invocation, but it only includes runtime deps and the
+default `[dependency-groups].dev` set (hypothesis, pre-commit,
+pytest-asyncio, syrupy, testcontainers). The tooling in
+`[project.optional-dependencies].dev` (ruff, mypy, pytest-cov) is not
+installed until you run `uv sync --extra dev`. Run that once per fresh
+checkout or worktree.
