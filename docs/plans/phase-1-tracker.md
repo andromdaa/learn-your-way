@@ -19,7 +19,7 @@ T-numbers as prerequisites.
 - [x] [T1: Settings, logging, runtime dependency manifest](phase-1/T1-settings-logging.md)
 - [x] [T2: Filesystem adapter and data directory layout](phase-1/T2-filesystem-adapter.md)
 - [x] [T3: Docker compose for Qdrant and Redis](phase-1/T3-services-healthcheck.md)
-- [ ] [T4: SQLite schema, migrations, and source/lesson DAO](phase-1/T4-sqlite-dao.md)
+- [x] [T4: SQLite schema, migrations, and source/lesson DAO](phase-1/T4-sqlite-dao.md)
 - [ ] [T5: Docling PDF parser to ParsedDocument](phase-1/T5-docling-parser.md)
 - [ ] [T6: Round-trip span verifier](phase-1/T6-span-verifier.md)
 - [ ] [T7: Heuristic chunker and ConceptNode provenance field](phase-1/T7-heuristic-chunker.md)
@@ -55,6 +55,8 @@ T-numbers as prerequisites.
 - 2026-04-29: T3 adds `pytest-asyncio` (asyncio_mode = "auto") as a dev dependency and `asyncio_mode = "auto"` to pytest config. Rationale: healthcheck probes are async; auto mode avoids per-test `@pytest.mark.asyncio` decoration and is the recommended default for fully-async test suites. Pre-commit mypy hook extended with `httpx`, `redis[hiredis]`, `qdrant-client`, `testcontainers`, and `pytest-asyncio` additional_dependencies so the isolated hook env can resolve all imports.
 
 - 2026-04-29: T3 pins `qdrant/qdrant:v1.14.1` and `redis:7.4.3-alpine` in docker-compose.yml. Rationale: avoids silent breakage from `:latest` drift; both are the current stable tags at time of writing and match the qdrant-client 1.17.1 runtime dependency.
+
+- 2026-04-29: T4 stores `concepts` and `source_spans` as relational rows (not JSON blobs) in the SQLite schema. Rationale: the spec requires querying by `source_id` and `lesson_id`; relational rows keep those queries cheap and allow `ON DELETE CASCADE` to clean up spans atomically when a lesson is replaced. JSON blobs would require full-graph loads for any span query. Upsert strategy: delete child `concepts` rows (cascading to `source_spans`) then re-insert, giving a clean replace without needing UPSERT conflict resolution on multiple tables. Schema is applied via `executescript` to avoid comment-parsing issues from semicolons inside SQL comments.
 
 ## Open Questions
 
