@@ -1,7 +1,7 @@
-"""Tests for lyw_core.settings.
+"""Tests for lyw_core.settings and lyw_core.logging.
 
 Covers: typed defaults, LYW_-prefix env overrides, .env discovery,
-and Literal validation for log_format.
+Literal validation for log_format, and configure_logging() smoke tests.
 """
 
 from pathlib import Path
@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from lyw_core.logging import configure_logging
 from lyw_core.settings import Settings
 
 _ALL_LYW_KEYS = [
@@ -29,7 +30,7 @@ def _clear_lyw(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_defaults_when_no_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _clear_lyw(monkeypatch)
-    s = Settings(_env_file=tmp_path / "missing.env")  # type: ignore[call-arg]
+    s = Settings(_env_file=tmp_path / "missing.env")
     assert isinstance(s.data_dir, Path)
     assert isinstance(s.db_path, Path)
     assert s.qdrant_url == "http://localhost:6333"
@@ -46,7 +47,7 @@ def test_env_prefix_overrides(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     monkeypatch.setenv("LYW_MODEL_NAME", "gemma3:12b")
     monkeypatch.setenv("LYW_LOG_FORMAT", "json")
     monkeypatch.setenv("LYW_DATA_DIR", str(tmp_path / "mydata"))
-    s = Settings(_env_file=tmp_path / "missing.env")  # type: ignore[call-arg]
+    s = Settings(_env_file=tmp_path / "missing.env")
     assert s.qdrant_url == "http://qdrant:6333"
     assert s.redis_url == "redis://redis:6379/1"
     assert s.model_name == "gemma3:12b"
@@ -60,16 +61,36 @@ def test_log_format_rejects_unknown(
     _clear_lyw(monkeypatch)
     monkeypatch.setenv("LYW_LOG_FORMAT", "xml")
     with pytest.raises(ValidationError):
-        Settings(_env_file=tmp_path / "missing.env")  # type: ignore[call-arg]
+        Settings(_env_file=tmp_path / "missing.env")
 
 
 def test_dotenv_discovery(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _clear_lyw(monkeypatch)
     env_file = tmp_path / ".env"
     env_file.write_text(
-        "LYW_QDRANT_URL=http://qdrant-from-dotenv:6333\n"
-        "LYW_MODEL_NAME=gemma3:27b\n"
+        "LYW_QDRANT_URL=http://qdrant-from-dotenv:6333\nLYW_MODEL_NAME=gemma3:27b\n"
     )
-    s = Settings(_env_file=env_file)  # type: ignore[call-arg]
+    s = Settings(_env_file=env_file)
     assert s.qdrant_url == "http://qdrant-from-dotenv:6333"
     assert s.model_name == "gemma3:27b"
+
+
+# --- configure_logging -------------------------------------------------------
+
+
+def test_configure_logging_console(tmp_path: Path) -> None:
+    s = Settings(_env_file=tmp_path / "missing.env", log_format="console")
+    configure_logging(s)  # must not raise
+
+
+def test_configure_logging_json(tmp_path: Path) -> None:
+    s = Settings(_env_file=tmp_path / "missing.env", log_format="json")
+    configure_logging(s)  # must not raise
+
+
+def test_configure_logging_no_settings(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _clear_lyw(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+    configure_logging()  # reads Settings() from env; must not raise
