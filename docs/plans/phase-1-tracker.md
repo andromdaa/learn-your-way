@@ -16,7 +16,7 @@ T-numbers as prerequisites.
 ## Tasks
 
 - [x] [T0c: Package skeleton and test directory restructure](phase-1/T0c-package-skeleton.md)
-- [ ] [T1: Settings, logging, runtime dependency manifest](phase-1/T1-settings-logging.md)
+- [x] [T1: Settings, logging, runtime dependency manifest](phase-1/T1-settings-logging.md)
 - [ ] [T2: Filesystem adapter and data directory layout](phase-1/T2-filesystem-adapter.md)
 - [ ] [T3: Docker compose for Qdrant and Redis](phase-1/T3-services-healthcheck.md)
 - [ ] [T4: SQLite schema, migrations, and source/lesson DAO](phase-1/T4-sqlite-dao.md)
@@ -38,6 +38,13 @@ T-numbers as prerequisites.
   integration tests arrive. Rationale: `pytest -m integration` must exit 0
   before any service-backed tests exist, and the placeholder keeps the marker
   path selectable without requiring Qdrant, Redis, or end-to-end fixtures.
+- 2026-04-29: T1 pins `gemma3:4b` as `LYW_MODEL_NAME` default and uses
+  `str`-typed URLs (not `AnyUrl`). Rationale: `gemma3:4b` is the correct
+  Ollama tag for Gemma 4 4B; `AnyUrl` adds round-trip `str()` surprises
+  that downstream service clients (httpx, qdrant-client, redis-py) don't
+  need. Pre-commit ruff hooks use `language: system` pointing at the
+  nix-provided ruff binary to avoid the dynamically-linked venv binary
+  failing on NixOS.
 
 ## Open Questions
 

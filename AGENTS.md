@@ -57,10 +57,11 @@ Quick commands:
 
 ```bash
 uv sync --extra dev         # set up environment
-uv run ruff check .         # lint
-uv run ruff format .        # format
-uv run mypy                 # type-check
-uv run pytest --cov         # tests + coverage
+ruff check .                # lint
+ruff format .               # format
+mypy                        # type-check
+pytest --cov                # tests + coverage
+pre-commit run --all-files  # run all pre-commit hooks
 ```
 
 ## Working agreement
