@@ -27,7 +27,7 @@ T-numbers as prerequisites.
 - [x] [T9: LLM-refined chunker](phase-1/T9-llm-refined-chunker.md)
 - [x] [T10: BM25 retrieval pipeline and embedding model ADR](phase-1/T10-bm25-retrieval.md)
 - [x] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
-- [ ] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
+- [x] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
 - [x] [T13: Inspection CLI](phase-1/T13-inspection-cli.md)
 - [ ] [T14: Arq worker scaffolding and ingest pipeline](phase-1/T14-arq-ingest-worker.md)
 - [ ] [T15: FastAPI sources and lessons endpoints](phase-1/T15-fastapi-endpoints.md)
@@ -91,6 +91,7 @@ T-numbers as prerequisites.
 - 2026-04-29: T13 uses the stable fixture PDF path (not `tmp_path`) as the `doc_id` in the stdout snapshot test. Rationale: HeuristicChunker hashes `doc_id::char_start:char_end` to produce node IDs; a `tmp_path`-based path changes each test run, making the snapshot unstable. Passing `_FIXTURE_PDF` (a committed file) gives a constant doc_id and therefore constant node IDs across runs.
 
 - 2026-04-29: T13 marks the real-subprocess test `@pytest.mark.integration` and leaves the unit tests fully mocked. Rationale: `DoclingParser` requires ML model inference for real PDFs; following the T5 pattern of mocking `DocumentConverter.convert` keeps unit tests fast and model-free, while the integration marker preserves the ability to run the full round-trip against the actual fixture.
+- 2026-04-29: T12 injects `CrossEncoder` via constructor argument (defaulting to `CrossEncoder(CROSS_ENCODER_MODEL)`) rather than patching. Rationale: same seam pattern as T8/T11; avoids import-path coupling in tests and keeps mock-based unit tests free of model downloads. `HybridRetriever` deduplicates by `concept_id` with BM25-first ordering so the lexical hit's text/span is preserved when the same concept appears in both retrievers. `fetch_k` defaults to 20 to give the reranker enough candidates without over-fetching.
 
 ## Open Questions
 
