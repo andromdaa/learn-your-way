@@ -31,7 +31,6 @@ instead of deriving conventions independently.
 
 ## Acceptance
 
-- `uv sync --extra dev` resolves.
 - `pytest tests/unit/test_settings.py` passes, covering env
   prefix overrides, typed defaults, and `.env` discovery.
 - `pre-commit run --all-files` succeeds.

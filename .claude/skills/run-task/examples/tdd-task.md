@@ -80,7 +80,7 @@ Plan output:
 User approves. Agent writes tests. Agent runs:
 
 ```bash
-uv run pytest tests/unit/test_span_verifier.py -v
+pytest tests/unit/test_span_verifier.py -v
 ```
 
 Output is shown raw. Tests fail because the module does not exist.
@@ -110,15 +110,15 @@ test it believes is wrong, it must surface the conflict and stop, not
 Agent runs after each meaningful change:
 
 ```bash
-uv run pytest tests/unit/test_span_verifier.py -v
+pytest tests/unit/test_span_verifier.py -v
 ```
 
 Shows raw output. When green, runs full CI:
 
 ```bash
-uv run mypy
-uv run ruff check . && uv run ruff format --check .
-uv run pytest --cov
+mypy
+ruff check . && ruff format --check .
+pytest --cov
 ```
 
 Commits:

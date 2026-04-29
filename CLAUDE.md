@@ -13,7 +13,6 @@ nixpkgs-linked `ruff`, `mypy`, and `python312`.
 Run tools directly — no `uv run` or `nix develop --command` prefix needed:
 
 ```bash
-uv sync --extra dev
 ruff check .
 ruff format .
 mypy

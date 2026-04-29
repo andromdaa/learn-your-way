@@ -103,11 +103,11 @@ Do not touch:
 
 Verification:
 ```bash
-uv run pytest tests/test_lesson_graph.py -v       # schema first
-uv run pytest tests/unit/test_llm_refined_chunker.py -v
-uv run mypy
-uv run ruff check . && uv run ruff format --check .
-uv run pytest --cov
+pytest tests/test_lesson_graph.py -v       # schema first
+pytest tests/unit/test_llm_refined_chunker.py -v
+mypy
+ruff check . && ruff format --check .
+pytest --cov
 ```
 
 Stop. Await approval.

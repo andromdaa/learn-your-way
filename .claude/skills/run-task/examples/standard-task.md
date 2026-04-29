@@ -79,10 +79,10 @@ Order:
 
 Verification:
 ```bash
-uv run ruff check . && uv run ruff format --check .
-uv run mypy
-uv run pytest tests/unit/test_filesystem.py -v
-uv run pytest --cov
+ruff check . && uv run ruff format --check .
+mypy
+pytest tests/unit/test_filesystem.py -v
+pytest --cov
 ```
 
 Do not touch:
