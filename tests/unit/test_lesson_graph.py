@@ -107,6 +107,41 @@ def test_concept_node_requires_at_least_one_span() -> None:
         )
 
 
+def test_concept_node_provenance_defaults_to_heuristic() -> None:
+    node = ConceptNode(
+        id="c1",
+        title="t",
+        summary="s",
+        learning_objective="lo",
+        source_spans=[_span()],
+    )
+    assert node.provenance == "heuristic"
+
+
+def test_concept_node_provenance_accepts_llm_refined() -> None:
+    node = ConceptNode(
+        id="c1",
+        title="t",
+        summary="s",
+        learning_objective="lo",
+        source_spans=[_span()],
+        provenance="llm_refined",
+    )
+    assert node.provenance == "llm_refined"
+
+
+def test_concept_node_provenance_rejects_invalid() -> None:
+    with pytest.raises(ValidationError):
+        ConceptNode(
+            id="c1",
+            title="t",
+            summary="s",
+            learning_objective="lo",
+            source_spans=[_span()],
+            provenance="unknown",
+        )
+
+
 # AssessmentItem ------------------------------------------------------------
 
 
