@@ -5,6 +5,7 @@ description = "Self-hosted, single-user replica of Google's Learn Your Way."
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
+    "docling>=2.92.0",
     "httpx>=0.28.1",
     "pydantic>=2.7",
     "pydantic-settings>=2.14.0",
@@ -35,7 +36,7 @@ packages = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
+target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
@@ -76,6 +77,14 @@ disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
 module = "testcontainers.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "lyw_core.healthcheck"
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = "fpdf.*"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

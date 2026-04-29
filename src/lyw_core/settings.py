@@ -20,3 +20,4 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://localhost:11434")
     model_name: str = Field(default="gemma3:4b")
     log_format: Literal["console", "json"] = Field(default="console")
+    docling_device: Literal["auto", "cpu", "cuda", "mps", "xpu"] = Field(default="auto")
