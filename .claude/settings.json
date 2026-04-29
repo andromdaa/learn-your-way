@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "defaultMode": "opusplan",
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
+  "outputStyle": "direct-compact",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/guard-schema.py"
+          }
+        ]
+      }
+    ]
+  }
+}

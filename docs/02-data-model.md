@@ -1,0 +1,122 @@
+# 02 — Data model
+
+## Why a canonical lesson graph
+
+All modalities are generated from a shared intermediate representation
+rather than directly from the raw PDF. This keeps modalities
+semantically aligned and source-faithful.
+
+The canonical lesson graph is that intermediate representation. Every
+derived asset records the concepts and source spans it was generated
+from. Every quiz item points back to the learning objective and source
+evidence it assesses.
+
+## Core types
+
+The authoritative schema lives in `src/lesson_graph/models.py`. The
+shape is reproduced here for review:
+
+```python
+from typing import Any, Literal, Self
+
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+class SourceSpan(BaseModel):
+    doc_id: str
+    page_start: int = Field(ge=1)
+    page_end: int = Field(ge=1)
+    char_start: int = Field(ge=0)
+    char_end: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def _check_ordering(self) -> Self:
+        if self.page_end < self.page_start:
+            raise ValueError("page_end must be >= page_start")
+        if self.char_end < self.char_start:
+            raise ValueError("char_end must be >= char_start")
+        return self
+
+
+class ConceptNode(BaseModel):
+    id: str
+    title: str
+    summary: str
+    learning_objective: str
+    source_spans: list[SourceSpan]
+    prerequisites: list[str] = Field(default_factory=list)
+
+
+class AssessmentItem(BaseModel):
+    id: str
+    kind: Literal["mcq", "matching", "short_answer", "drag_drop_timeline"]
+    prompt: str
+    rationale: str
+    source_spans: list[SourceSpan]
+    difficulty: Literal["easy", "medium", "hard"]
+
+
+class DerivedAsset(BaseModel):
+    id: str
+    kind: Literal["immersive_text", "slides", "mind_map", "timeline", "image"]
+    based_on_concepts: list[str]
+    # TODO(phase-2): replace with TypedDict.
+    personalization_profile: dict[str, Any]
+    uri: str | None = None
+```
+
+The `image` variant is reserved for a future illustration phase and is
+not generated in phases 1-3. See `specs/phase-3-modalities.md`.
+
+## Cross-field invariants
+
+`SourceSpan` uses `model_validator(mode="after")` rather than
+field-level `info.data` lookup. Field-level lookup is order-dependent:
+reordering field declarations would silently allow inverted spans.
+The model-level validator runs after all fields are populated and
+therefore does not depend on declaration order.
+
+The negative case is pinned by
+`tests/test_lesson_graph.py::test_source_span_validator_does_not_depend_on_field_order`.
+
+## Invariants
+
+These hold regardless of modality, generator, or pipeline phase:
+
+- Every `ConceptNode` has at least one `SourceSpan`.
+- Every `SourceSpan` resolves to valid character offsets in its
+  referenced document, and `page_end >= page_start`,
+  `char_end >= char_start`.
+- Every `AssessmentItem` references at least one `ConceptNode` (via
+  the learning objective) and at least one `SourceSpan` (via source
+  evidence).
+- Every `DerivedAsset` references at least one concept in
+  `based_on_concepts`.
+- `personalization_profile` is `dict[str, Any]` for now; the schema
+  will be tightened to a `TypedDict` in phase 2 (see
+  `specs/phase-2-personalization.md`).
+
+A round-trip test runs at ingest: every character in every span must
+resolve back to the source text.
+
+## Schema change protocol
+
+Edits to `src/lesson_graph/models.py` are blocked by a PreToolUse hook
+(`.claude/hooks/guard-schema.py`) unless `SCHEMA_CHANGE=1` is set in
+the agent's environment. Schema changes must:
+
+1. Update tests in `tests/test_lesson_graph.py` to lock the new
+   invariants.
+2. For semantically significant changes, add an ADR under
+   `docs/adr/`.
+
+The hook is enforcement, not guidance. The actual rule lives here and
+in `AGENTS.md`.
+
+## Pedagogy rubrics
+
+Generators and validators evaluate against these rubrics: source
+faithfulness, coverage, emphasis, adaptability, active learning, and
+clarity of learning intentions. These are not stored in the schema;
+they are encoded in the validators that gate `DerivedAsset`
+persistence.
