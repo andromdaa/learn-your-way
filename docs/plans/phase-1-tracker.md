@@ -18,7 +18,7 @@ T-numbers as prerequisites.
 - [x] [T0c: Package skeleton and test directory restructure](phase-1/T0c-package-skeleton.md)
 - [x] [T1: Settings, logging, runtime dependency manifest](phase-1/T1-settings-logging.md)
 - [x] [T2: Filesystem adapter and data directory layout](phase-1/T2-filesystem-adapter.md)
-- [ ] [T3: Docker compose for Qdrant and Redis](phase-1/T3-services-healthcheck.md)
+- [x] [T3: Docker compose for Qdrant and Redis](phase-1/T3-services-healthcheck.md)
 - [ ] [T4: SQLite schema, migrations, and source/lesson DAO](phase-1/T4-sqlite-dao.md)
 - [ ] [T5: Docling PDF parser to ParsedDocument](phase-1/T5-docling-parser.md)
 - [ ] [T6: Round-trip span verifier](phase-1/T6-span-verifier.md)
@@ -51,6 +51,10 @@ T-numbers as prerequisites.
   need. Pre-commit ruff hooks use `language: system` pointing at the
   nix-provided ruff binary to avoid the dynamically-linked venv binary
   failing on NixOS.
+
+- 2026-04-29: T3 adds `pytest-asyncio` (asyncio_mode = "auto") as a dev dependency and `asyncio_mode = "auto"` to pytest config. Rationale: healthcheck probes are async; auto mode avoids per-test `@pytest.mark.asyncio` decoration and is the recommended default for fully-async test suites. Pre-commit mypy hook extended with `httpx`, `redis[hiredis]`, `qdrant-client`, `testcontainers`, and `pytest-asyncio` additional_dependencies so the isolated hook env can resolve all imports.
+
+- 2026-04-29: T3 pins `qdrant/qdrant:v1.14.1` and `redis:7.4.3-alpine` in docker-compose.yml. Rationale: avoids silent breakage from `:latest` drift; both are the current stable tags at time of writing and match the qdrant-client 1.17.1 runtime dependency.
 
 ## Open Questions
 
