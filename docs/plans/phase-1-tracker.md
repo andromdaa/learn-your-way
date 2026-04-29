@@ -23,7 +23,7 @@ T-numbers as prerequisites.
 - [x] [T5: Docling PDF parser to ParsedDocument](phase-1/T5-docling-parser.md)
 - [x] [T6: Round-trip span verifier](phase-1/T6-span-verifier.md)
 - [ ] [T7: Heuristic chunker and ConceptNode provenance field](phase-1/T7-heuristic-chunker.md)
-- [ ] [T8: OllamaModelClient implementing ModelClient](phase-1/T8-ollama-client.md)
+- [x] [T8: OllamaModelClient implementing ModelClient](phase-1/T8-ollama-client.md)
 - [ ] [T9: LLM-refined chunker](phase-1/T9-llm-refined-chunker.md)
 - [ ] [T10: BM25 retrieval pipeline and embedding model ADR](phase-1/T10-bm25-retrieval.md)
 - [ ] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
@@ -63,6 +63,8 @@ T-numbers as prerequisites.
 - 2026-04-29: T6 places `SpanVerificationFailure` as a frozen `dataclass` (not a Pydantic model). Rationale: it is a diagnostic/error value — no validation or serialization needed, and `frozen=True` gives immutability with zero overhead. `verify_spans` checks inverted spans defensively (even though Pydantic prevents creating them via normal construction) because `model_construct` bypasses validators and downstream code could produce unchecked spans. `hypothesis` added to `[dependency-groups] dev` alongside `pytest-asyncio` (same dev tooling tier).
 
 - 2026-04-29: T4 stores `concepts` and `source_spans` as relational rows (not JSON blobs) in the SQLite schema. Rationale: the spec requires querying by `source_id` and `lesson_id`; relational rows keep those queries cheap and allow `ON DELETE CASCADE` to clean up spans atomically when a lesson is replaced. JSON blobs would require full-graph loads for any span query. Upsert strategy: delete child `concepts` rows (cascading to `source_spans`) then re-insert, giving a clean replace without needing UPSERT conflict resolution on multiple tables. Schema is applied via `executescript` to avoid comment-parsing issues from semicolons inside SQL comments.
+
+- 2026-04-29: T8 injects `httpx.AsyncBaseTransport` into `OllamaModelClient.__init__` for unit-test mocking rather than patching. Rationale: avoids `unittest.mock.patch` fragility (import-path coupling); `httpx.MockTransport` is the library's own test seam and works cleanly with `async with httpx.AsyncClient(transport=...)`. The retry loop only retries on non-`OllamaError` exceptions (i.e., network-level failures), not on HTTP error responses, so a bad model name raises immediately without burning retries.
 
 ## Open Questions
 
