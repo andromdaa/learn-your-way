@@ -1,7 +1,6 @@
 """Tests for HeuristicChunker with syrupy snapshot comparison."""
 
-import pytest
-from syrupy import SnapshotAssertion
+from syrupy.assertion import SnapshotAssertion
 
 from lyw_core.chunker import HeuristicChunker
 from lyw_core.parser.models import ParsedBlock, ParsedDocument

@@ -60,6 +60,7 @@ class ConceptNode(BaseModel):
     learning_objective: str
     source_spans: list[SourceSpan] = Field(min_length=1)
     prerequisites: list[str] = Field(default_factory=list)
+    provenance: Literal["heuristic", "llm_refined"] = "heuristic"
 
 
 class AssessmentItem(BaseModel):
