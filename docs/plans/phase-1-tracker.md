@@ -24,7 +24,7 @@ T-numbers as prerequisites.
 - [x] [T6: Round-trip span verifier](phase-1/T6-span-verifier.md)
 - [x] [T7: Heuristic chunker and ConceptNode provenance field](phase-1/T7-heuristic-chunker.md)
 - [x] [T8: OllamaModelClient implementing ModelClient](phase-1/T8-ollama-client.md)
-- [ ] [T9: LLM-refined chunker](phase-1/T9-llm-refined-chunker.md)
+- [x] [T9: LLM-refined chunker](phase-1/T9-llm-refined-chunker.md)
 - [x] [T10: BM25 retrieval pipeline and embedding model ADR](phase-1/T10-bm25-retrieval.md)
 - [x] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
 - [ ] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
@@ -81,6 +81,12 @@ T-numbers as prerequisites.
 - 2026-04-29: T11 adds unit tests (mocked QdrantClient + mocked SentenceTransformer) alongside the required integration tests. Rationale: `embedding.py` and `qdrant.py` would otherwise have ~34–70% coverage from integration tests alone, falling below the 90% gate; mock-based unit tests bring the project to 92.7% without requiring Docker or model downloads.
 
 - 2026-04-29: T11 uses delete-then-create (via `collection_exists` + `delete_collection` + `create_collection`) rather than the deprecated `recreate_collection`. Rationale: `recreate_collection` is removed in the qdrant-client version pinned by this project; the explicit delete-then-create is the recommended migration path and makes re-indexing intent clear.
+
+- 2026-04-29: T9 uses a typed Python module (`prompts/concept_extraction.py`) rather than a `.txt` file for the prompt template. Rationale: avoids runtime file-path resolution, is fully mypy-traceable, and lets the prompt constants be imported directly without I/O.
+
+- 2026-04-29: T9 sets `MAX_INPUT_CHARS = 4000` as the truncation threshold for text sent to the model, appending `[TEXT TRUNCATED]` when exceeded. Rationale: 4 000 chars comfortably fits within the context window of `gemma3:4b` while leaving room for the system prompt and the JSON response; the sentinel is documented so downstream tooling can detect clipped inputs.
+
+- 2026-04-29: T9 wraps both `json.JSONDecodeError` and Pydantic `ValidationError` in `LLMRefinerError` rather than letting them propagate bare. Rationale: callers need a single typed error to catch for retry/fallback logic; wrapping with `from exc` preserves the original traceback for debugging.
 
 ## Open Questions
 
