@@ -75,7 +75,7 @@ def three_concept_retriever() -> BM25Retriever:
 
 
 def test_retriever_protocol_compliance(three_concept_retriever: BM25Retriever) -> None:
-    _: Retriever = three_concept_retriever  # type: ignore[assignment]
+    _: Retriever = three_concept_retriever
 
 
 def test_top_k_limits_results(three_concept_retriever: BM25Retriever) -> None:
