@@ -229,6 +229,10 @@ components:
         prerequisites:
           type: array
           items: { type: string }
+        provenance:
+          type: string
+          enum: [heuristic, llm_refined]
+          default: heuristic
 
     LessonGraph:
       type: object

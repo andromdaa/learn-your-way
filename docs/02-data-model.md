@@ -43,8 +43,9 @@ class ConceptNode(BaseModel):
     title: str
     summary: str
     learning_objective: str
-    source_spans: list[SourceSpan]
+    source_spans: list[SourceSpan] = Field(min_length=1)
     prerequisites: list[str] = Field(default_factory=list)
+    provenance: Literal["heuristic", "llm_refined"] = "heuristic"  # ADR-0008
 
 
 class AssessmentItem(BaseModel):
@@ -87,14 +88,15 @@ These hold regardless of modality, generator, or pipeline phase:
 - Every `SourceSpan` resolves to valid character offsets in its
   referenced document, and `page_end >= page_start`,
   `char_end >= char_start`.
-- Every `AssessmentItem` references at least one `ConceptNode` (via
-  the learning objective) and at least one `SourceSpan` (via source
-  evidence).
+- Every `AssessmentItem` references at least one `ConceptNode` via
+  `concept_id` (added in phase 2) and at least one `SourceSpan`. The
+  cited spans must be a subset of the parent concept's span range.
 - Every `DerivedAsset` references at least one concept in
   `based_on_concepts`.
-- `personalization_profile` is `dict[str, Any]` for now; the schema
-  will be tightened to a `TypedDict` in phase 2 (see
-  `specs/phase-2-personalization.md`).
+- `personalization_profile` is `dict[str, Any]` until phase 2 ships.
+  Phase 2 replaces it with a `PersonalizationProfile` Pydantic model
+  that carries a `replacements: list[ReplacementRecord]` field. See
+  `specs/phase-2-personalization.md`.
 
 A round-trip test runs at ingest: every character in every span must
 resolve back to the source text.
