@@ -89,21 +89,6 @@ The research document discusses topics outside this project's scope
 (LTI, privacy, licensing, audio modalities). Working specs supersede
 the research document on every point.
 
-## NixOS environment
-
-This machine runs NixOS with direnv + nix-direnv. The `flake.nix` dev
-shell activates automatically on `cd` (after `direnv allow`), providing
-nixpkgs-linked `ruff`, `mypy`, `precommit`, and `python312`.
-
-Run tools directly — no `uv run` or `nix develop --command` prefix needed:
-
-```bash
-ruff check .
-ruff format .
-mypy
-pytest --cov
-```
-
 Always launch `claude` from within this directory so the direnv
 environment is inherited.
 
