@@ -31,7 +31,7 @@ embedding model decision recorded before dense retrieval begins.
 - Top-k results are stable across runs on the tiny fixture.
 - Every `RetrievalHit.source_span` resolves through the round-trip
   verifier.
-- `uv run mypy` is strict-clean.
+- `mypy` is strict-clean.
 - ADR-0007 is committed.
 
 ## Out of Scope

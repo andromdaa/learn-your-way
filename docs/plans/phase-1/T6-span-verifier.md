@@ -26,7 +26,7 @@ objects. This is the truth gate for the spec requirement that 100% of
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_span_verifier.py` passes.
+- `pytest tests/unit/test_span_verifier.py` passes.
 - Hypothesis completes without counterexamples.
 - The failure type carries the span and a document excerpt for
   diagnosis.

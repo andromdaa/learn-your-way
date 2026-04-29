@@ -31,7 +31,7 @@ pydantic schema before persistence, and refined nodes set
 - Stub-client tests pass.
 - Malformed payloads fail with a typed error, not a silent fallback or
   bare `Exception`.
-- `uv run mypy` is strict-clean.
+- `mypy` is strict-clean.
 - `provenance == "llm_refined"` on all refined nodes.
 
 ## Out of Scope

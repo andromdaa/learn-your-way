@@ -32,10 +32,10 @@ instead of deriving conventions independently.
 ## Acceptance
 
 - `uv sync --extra dev` resolves.
-- `uv run pytest tests/unit/test_settings.py` passes, covering env
+- `pytest tests/unit/test_settings.py` passes, covering env
   prefix overrides, typed defaults, and `.env` discovery.
-- `uv run pre-commit run --all-files` succeeds.
-- `uv run mypy` and `uv run ruff check .` are clean.
+- `pre-commit run --all-files` succeeds.
+- `mypy` and `ruff check .` are clean.
 
 ## Out of Scope
 

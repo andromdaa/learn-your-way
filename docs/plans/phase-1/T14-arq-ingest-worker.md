@@ -31,13 +31,13 @@ reduces blast radius for later API work.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_ingest_job_unit.py` passes without
+- `pytest tests/unit/test_ingest_job_unit.py` passes without
   Docker.
-- `uv run pytest -m integration tests/integration/test_ingest_job.py`
+- `pytest -m integration tests/integration/test_ingest_job.py`
   passes with Docker.
 - The tiny fixture produces a persisted lesson and populated BM25
   index.
-- `uv run arq lyw_core.worker.settings.WorkerSettings` boots cleanly.
+- `arq lyw_core.worker.settings.WorkerSettings` boots cleanly.
 
 ## Out of Scope
 

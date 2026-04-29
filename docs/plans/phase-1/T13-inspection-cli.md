@@ -28,9 +28,9 @@ parse-only orchestration with no new domain logic.
 
 ## Acceptance
 
-- `uv run python -m lyw_core inspect tests/fixtures/tiny.pdf` exits 0.
+- `python -m lyw_core inspect tests/fixtures/tiny.pdf` exits 0.
 - Output prints a tree with at least one concept node.
-- `uv run pytest tests/unit/test_cli.py` passes.
+- `pytest tests/unit/test_cli.py` passes.
 - Snapshot output is stable and diffable.
 
 ## Out of Scope

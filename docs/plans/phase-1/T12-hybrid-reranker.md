@@ -26,7 +26,7 @@ by the inspection and later orchestration paths.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_retrieval_reranker.py tests/unit/test_retrieval_hybrid.py`
+- `pytest tests/unit/test_retrieval_reranker.py tests/unit/test_retrieval_hybrid.py`
   passes.
 - Every top-k hit has a resolvable `SourceSpan`.
 - Reranker scores are bounded and stable run-to-run.

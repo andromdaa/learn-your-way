@@ -28,10 +28,10 @@ a per-lesson Qdrant collection.
 
 ## Acceptance
 
-- `uv run pytest -m integration tests/integration/test_retrieval_qdrant.py`
+- `pytest -m integration tests/integration/test_retrieval_qdrant.py`
   passes against testcontainers Qdrant.
 - Collection names are namespaced per lesson id.
-- `uv run mypy` is strict-clean.
+- `mypy` is strict-clean.
 
 ## Out of Scope
 

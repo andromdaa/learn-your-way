@@ -29,11 +29,11 @@ node records whether it came from the heuristic or the LLM refiner.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_chunker_heuristic.py tests/unit/test_lesson_graph.py`
+- `pytest tests/unit/test_chunker_heuristic.py tests/unit/test_lesson_graph.py`
   passes.
 - The snapshot is stable.
 - The round-trip verifier returns no failures on the tiny fixture.
-- `uv run mypy` is strict-clean.
+- `mypy` is strict-clean.
 
 ## Out of Scope
 

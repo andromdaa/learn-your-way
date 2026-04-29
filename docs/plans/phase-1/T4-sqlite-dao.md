@@ -27,10 +27,10 @@ place to persist rows before API work can land.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_db.py` passes.
+- `pytest tests/unit/test_db.py` passes.
 - A `LessonGraph` containing `ConceptNode`s with `SourceSpan`s`
   round-trips through the DAO unchanged.
-- `uv run mypy` is strict-clean.
+- `mypy` is strict-clean.
 
 ## Out of Scope
 

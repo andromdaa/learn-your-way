@@ -30,10 +30,10 @@ assert services are up.
 ## Acceptance
 
 - `docker compose up -d` brings both services to a healthy state.
-- `uv run python -m lyw_core.healthcheck` exits 0.
-- `uv run pytest tests/unit/test_healthcheck_unit.py` passes without
+- `python -m lyw_core.healthcheck` exits 0.
+- `pytest tests/unit/test_healthcheck_unit.py` passes without
   Docker.
-- `uv run pytest -m integration tests/integration/test_healthcheck.py`
+- `pytest -m integration tests/integration/test_healthcheck.py`
   passes with Docker.
 
 ## Out of Scope

@@ -24,9 +24,9 @@ existing files.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/` passes with the same tests in new paths.
-- `uv run mypy` sees both packages.
-- `uv run pytest -m integration` exits 0 with no tests collected.
+- `pytest tests/unit/` passes with the same tests in new paths.
+- `mypy` sees both packages.
+- `pytest -m integration` exits 0 with no tests collected.
 - `docs/adr/0006-lyw-core-package.md` is committed.
 
 ## Out of Scope

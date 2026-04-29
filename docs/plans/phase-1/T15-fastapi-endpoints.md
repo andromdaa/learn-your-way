@@ -29,11 +29,11 @@ returns 202. `GET /lessons/{id}` returns the persisted `LessonGraph`.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_api.py` passes with in-process ingest.
+- `pytest tests/unit/test_api.py` passes with in-process ingest.
 - `POST /sources` returns 202.
 - `GET /lessons/{id}` returns a `LessonGraph` whose spans resolve.
 - `/openapi.json` matches `docs/04-api.md` for these two routes.
-- `uv run mypy` is strict-clean.
+- `mypy` is strict-clean.
 
 ## Out of Scope
 

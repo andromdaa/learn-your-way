@@ -29,9 +29,9 @@ this task adds the Ollama implementation under `lyw_core.clients`.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_ollama_client.py` passes with mocked
+- `pytest tests/unit/test_ollama_client.py` passes with mocked
   `httpx`.
-- `uv run mypy` is strict-clean and validates the protocol check.
+- `mypy` is strict-clean and validates the protocol check.
 - The optional live Ollama integration path skips cleanly without a
   running Ollama.
 

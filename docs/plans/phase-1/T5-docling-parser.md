@@ -29,10 +29,10 @@ can evolve without `SCHEMA_CHANGE=1`.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_parser.py` passes.
+- `pytest tests/unit/test_parser.py` passes.
 - `ParsedDocument.text[span.char_start:span.char_end]` returns the
   expected substring for hand-picked spans.
-- `uv run mypy` is strict-clean.
+- `mypy` is strict-clean.
 - Add an initially skipped integration test at
   `tests/integration/test_parser_openstax.py` for the gitignored
   OpenStax fixture.

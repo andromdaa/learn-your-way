@@ -26,7 +26,7 @@ contract.
 
 ## Acceptance
 
-- `uv run pytest tests/unit/test_storage.py` passes.
+- `pytest tests/unit/test_storage.py` passes.
 - Directory bootstrap is idempotent.
 - A written PDF round-trips byte-for-byte.
 - Content-hashed asset paths are deterministic.
