@@ -35,7 +35,7 @@ packages = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
+target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]

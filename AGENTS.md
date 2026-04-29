@@ -89,18 +89,18 @@ The research document discusses topics outside this project's scope
 (LTI, privacy, licensing, audio modalities). Working specs supersede
 the research document on every point.
 
-Always launch `claude` from within this directory so the direnv
-environment is inherited.
-
 ## Dependency Management
 
-This project uses NixOS with Nix flakes. There is no uv, pip, or virtualenv.
+This project uses `uv` with `uv.lock` committed. Tooling configuration
+lives in `pyproject.toml`.
 
 When adding a Python dependency:
-1. Do NOT use `uv add`, `pip install`, or any package manager CLI.
-2. Find the package in nixpkgs at `https://search.nixos.org/packages` under `python313Packages.<name>`.
-3. Add it to the `ps: with ps; [...]` list in `flake.nix`.
-4. If the package does not exist in nixpkgs, say so and stop — do not attempt a workaround without being asked.
+1. Runtime dep: `uv add <package>`
+2. Dev/test dep: `uv add --group dev <package>` (or `--optional dev`
+   for the `[project.optional-dependencies]` table — match where
+   similar packages already live).
+3. Commit the updated `pyproject.toml` and `uv.lock` together.
 
-Dev dependencies (pytest, mypy, ruff, etc.) also go in the same list in `flake.nix`.
-The `pyproject.toml` is for tooling configuration only (ruff, mypy, pytest settings). Do not add to its `[project.dependencies]`.
+Run commands inside the env via `uv run <cmd>` (e.g. `uv run pytest`,
+`uv run mypy`, `uv run ruff check`). `uv sync --extra dev` materializes
+`.venv/` from the lockfile.
