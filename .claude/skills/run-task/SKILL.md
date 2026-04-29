@@ -46,6 +46,7 @@ Stop after the plan. Wait for approval.
 
 ## Hard constraints
 
+- Create a new branch `feat/<T-number>-<short>`
 - Do not implement anything outside this task's scope. Out-of-spec discoveries go in the phase index under "Out-of-spec discoveries" with a T-number reference; continue.
 - Do not modify `AGENTS.md`, the spec, the schema, or any ADR unless the task explicitly requires it.
 - Do not weaken or skip existing tests.

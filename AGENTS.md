@@ -46,7 +46,6 @@ Rationale for each choice lives in `docs/adr/`.
 
 ## Development workflow
 
-- Package management: `uv`. Lockfile (`uv.lock`) is committed.
 - Lint and format: `ruff` (configured in `pyproject.toml`).
 - Type check: `mypy --strict`.
 - Tests: `pytest` with coverage (90% gate).
