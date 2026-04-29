@@ -14,14 +14,9 @@ from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import DoclingDocument
-from docling_core.types.doc import DocItemLabel
-from docling_core.types.doc.document import (
-    BoundingBox,
-    CoordOrigin,
-    ProvenanceItem,
-    Size,
-)
+from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.document import DoclingDocument, ProvenanceItem
+from docling_core.types.doc.labels import DocItemLabel
 
 from lyw_core.parser.docling import DoclingParser
 from lyw_core.parser.models import ParsedDocument

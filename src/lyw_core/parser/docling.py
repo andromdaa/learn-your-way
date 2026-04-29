@@ -7,7 +7,7 @@ from docling.datamodel.accelerator_options import (
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling_core.types.doc import DocItem
+from docling_core.types.doc.document import DocItem
 
 from lyw_core.parser.models import ParsedBlock, ParsedDocument
 from lyw_core.settings import Settings
@@ -22,9 +22,7 @@ class DoclingParser:
         self,
         accelerator_options: AcceleratorOptions | None = None,
     ) -> None:
-        opts = accelerator_options or AcceleratorOptions(
-            device=AcceleratorDevice.AUTO
-        )
+        opts = accelerator_options or AcceleratorOptions(device=AcceleratorDevice.AUTO)
         pdf_options = PdfPipelineOptions(accelerator_options=opts)
         self._converter = DocumentConverter(
             format_options={
@@ -72,7 +70,7 @@ class DoclingParser:
             cursor = char_end + 1  # +1 for the \n separator
 
         full_text = "\n".join(text_parts)
-        page_count = doc.num_pages() if callable(doc.num_pages) else int(doc.num_pages)
+        page_count = len(doc.pages)
         if not page_count and blocks:
             page_count = max(b.page_number for b in blocks)
 
