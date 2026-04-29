@@ -1,14 +1,36 @@
 from pathlib import Path
 
-from docling.document_converter import DocumentConverter
+from docling.datamodel.accelerator_options import (
+    AcceleratorDevice,
+    AcceleratorOptions,
+)
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.types.doc import DocItem
 
 from lyw_core.parser.models import ParsedBlock, ParsedDocument
+from lyw_core.settings import Settings
+
+
+def accelerator_from_settings(settings: Settings) -> AcceleratorOptions:
+    return AcceleratorOptions(device=settings.docling_device)
 
 
 class DoclingParser:
-    def __init__(self) -> None:
-        self._converter = DocumentConverter()
+    def __init__(
+        self,
+        accelerator_options: AcceleratorOptions | None = None,
+    ) -> None:
+        opts = accelerator_options or AcceleratorOptions(
+            device=AcceleratorDevice.AUTO
+        )
+        pdf_options = PdfPipelineOptions(accelerator_options=opts)
+        self._converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pdf_options),
+            },
+        )
 
     def parse(self, path: Path) -> ParsedDocument:
         result = self._converter.convert(str(path))

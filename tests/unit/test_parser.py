@@ -9,6 +9,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from docling.datamodel.accelerator_options import (
+    AcceleratorDevice,
+    AcceleratorOptions,
+)
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import DoclingDocument
 from docling_core.types.doc import DocItemLabel
 from docling_core.types.doc.document import (
@@ -147,3 +152,17 @@ def test_block_offsets_within_text_bounds(parsed: ParsedDocument) -> None:
         assert block.char_end <= n, (
             f"block {block.block_id!r} char_end {block.char_end} > text length {n}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Accelerator wiring
+# ---------------------------------------------------------------------------
+
+
+def test_accelerator_options_propagate_to_pdf_pipeline() -> None:
+    with patch("lyw_core.parser.docling.DocumentConverter") as mock_dc:
+        DoclingParser(AcceleratorOptions(device=AcceleratorDevice.CUDA))
+
+    fmt_options = mock_dc.call_args.kwargs["format_options"]
+    pdf_opt = fmt_options[InputFormat.PDF]
+    assert pdf_opt.pipeline_options.accelerator_options.device == "cuda"
