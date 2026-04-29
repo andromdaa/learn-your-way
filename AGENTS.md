@@ -23,6 +23,9 @@ See `docs/00-goals.md` for scope and `specs/` for the phase contract.
 - Edits to `src/lesson_graph/models.py` require `SCHEMA_CHANGE=1` in
   the agent environment. The schema is enforced as an invariant by
   the PreToolUse hook in `.claude/settings.json`.
+- Unit tests must stay fast and model-free: mock `DocumentConverter.convert`
+  and any Ollama/network call. Real inference belongs in `tests/integration/`
+  behind `@pytest.mark.integration`.
 
 ## Tech (pinned)
 
@@ -65,8 +68,14 @@ uv sync --extra dev
 uv run ruff check .                # lint
 uv run ruff format .               # format
 uv run mypy                        # type-check
-uv run pytest --cov                # tests + coverage
+uv run pytest --cov                # unit tests + coverage (CI command)
+uv run pytest -m integration       # integration tests (needs Docker + Ollama)
 uv run pre-commit run --all-files  # run all pre-commit hooks
+
+# Run services locally:
+uvicorn lyw_core.api.app:app --reload        # FastAPI dev server (port 8000)
+arq lyw_core.worker.settings.WorkerSettings  # Arq ingest worker (needs Redis)
+python -m lyw_core inspect <pdf>             # parse PDF, print concept tree
 
 # Fallback for one-off invocations without touching .venv:
 uvx ruff check .
