@@ -25,7 +25,7 @@ T-numbers as prerequisites.
 - [ ] [T7: Heuristic chunker and ConceptNode provenance field](phase-1/T7-heuristic-chunker.md)
 - [x] [T8: OllamaModelClient implementing ModelClient](phase-1/T8-ollama-client.md)
 - [ ] [T9: LLM-refined chunker](phase-1/T9-llm-refined-chunker.md)
-- [ ] [T10: BM25 retrieval pipeline and embedding model ADR](phase-1/T10-bm25-retrieval.md)
+- [x] [T10: BM25 retrieval pipeline and embedding model ADR](phase-1/T10-bm25-retrieval.md)
 - [ ] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
 - [ ] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
 - [ ] [T13: Inspection CLI](phase-1/T13-inspection-cli.md)
@@ -65,6 +65,10 @@ T-numbers as prerequisites.
 - 2026-04-29: T4 stores `concepts` and `source_spans` as relational rows (not JSON blobs) in the SQLite schema. Rationale: the spec requires querying by `source_id` and `lesson_id`; relational rows keep those queries cheap and allow `ON DELETE CASCADE` to clean up spans atomically when a lesson is replaced. JSON blobs would require full-graph loads for any span query. Upsert strategy: delete child `concepts` rows (cascading to `source_spans`) then re-insert, giving a clean replace without needing UPSERT conflict resolution on multiple tables. Schema is applied via `executescript` to avoid comment-parsing issues from semicolons inside SQL comments.
 
 - 2026-04-29: T8 injects `httpx.AsyncBaseTransport` into `OllamaModelClient.__init__` for unit-test mocking rather than patching. Rationale: avoids `unittest.mock.patch` fragility (import-path coupling); `httpx.MockTransport` is the library's own test seam and works cleanly with `async with httpx.AsyncClient(transport=...)`. The retry loop only retries on non-`OllamaError` exceptions (i.e., network-level failures), not on HTTP error responses, so a bad model name raises immediately without burning retries.
+
+- 2026-04-29: T10 indexes one Haystack Document per ConceptNode (not per SourceSpan), using the first source_span as the canonical provenance anchor in each RetrievalHit. Rationale: BM25 operates on the concept's own text fields (title + summary + learning_objective) which are the coherent semantic unit; indexing per-span would duplicate documents with the same content and produce noisy ranking. A single canonical span per hit keeps the round-trip verifier test straightforward.
+
+- 2026-04-29: T10 creates InMemoryBM25Retriever inside retrieve() rather than storing it as an instance field. Rationale: Haystack's InMemoryBM25Retriever is a lightweight stateless wrapper around the document store; instantiation cost is negligible and avoids any state-sharing issues if the store is mutated between calls. This matches the documented usage pattern for standalone (non-pipeline) retriever calls.
 
 ## Open Questions
 
