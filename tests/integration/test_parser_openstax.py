@@ -1,6 +1,6 @@
-"""Integration test: parse the gitignored OpenStax chapter fixture.
+"""Integration test: parse the committed OpenStax chapter fixture.
 
-Requires tests/fixtures/openstax_chapter.pdf to be present locally.
+Gates phase 2 per specs/phase-1-ingest.md acceptance criteria.
 """
 
 from pathlib import Path
@@ -12,7 +12,10 @@ from lyw_core.parser.docling import DoclingParser
 _FIXTURE = Path(__file__).parent.parent / "fixtures" / "openstax_chapter.pdf"
 
 
-@pytest.mark.skip(reason="requires tests/fixtures/openstax_chapter.pdf — not in repo")
+@pytest.mark.skipif(
+    not _FIXTURE.exists(),
+    reason=f"missing fixture: {_FIXTURE}",
+)
 @pytest.mark.integration
 def test_openstax_chapter_parses() -> None:
     parser = DoclingParser()
