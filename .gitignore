@@ -21,4 +21,3 @@ dist/
 docs/artifacts/
 .envrc
 flake.lock
-flake.nix
