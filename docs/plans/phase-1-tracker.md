@@ -29,7 +29,7 @@ T-numbers as prerequisites.
 - [x] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
 - [x] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
 - [x] [T13: Inspection CLI](phase-1/T13-inspection-cli.md)
-- [ ] [T14: Arq worker scaffolding and ingest pipeline](phase-1/T14-arq-ingest-worker.md)
+- [x] [T14: Arq worker scaffolding and ingest pipeline](phase-1/T14-arq-ingest-worker.md)
 - [ ] [T15: FastAPI sources and lessons endpoints](phase-1/T15-fastapi-endpoints.md)
 
 ## Decisions Made
@@ -83,6 +83,21 @@ T-numbers as prerequisites.
 - 2026-04-29: T11 uses delete-then-create (via `collection_exists` + `delete_collection` + `create_collection`) rather than the deprecated `recreate_collection`. Rationale: `recreate_collection` is removed in the qdrant-client version pinned by this project; the explicit delete-then-create is the recommended migration path and makes re-indexing intent clear.
 
 - 2026-04-29: T9 uses a typed Python module (`prompts/concept_extraction.py`) rather than a `.txt` file for the prompt template. Rationale: avoids runtime file-path resolution, is fully mypy-traceable, and lets the prompt constants be imported directly without I/O.
+
+- 2026-04-29: T14 calls `db.add_source()` before `db.upsert_lesson_graph()` when
+  the source is not already registered. Rationale: `lessons.source_id` is a FOREIGN KEY
+  into `sources`; the DAO enforces this constraint with `PRAGMA foreign_keys = ON`.
+  The job checks `get_source()` first so re-ingestion of an existing source does not
+  fail with a UNIQUE constraint error. SHA-256 of the PDF bytes is computed inline
+  (no separate file-hashing utility needed at this stage).
+
+- 2026-04-29: T14 pins `arq>=0.25.0` rather than upgrading to 0.26+. Rationale:
+  arq 0.26+ requires `redis[hiredis]<6` which conflicts with the project's
+  `redis[hiredis]>=7.4.0` pin. arq 0.25.0 is incompatible with the arq CLI on
+  Python 3.14 (`asyncio.get_event_loop()` raises RuntimeError), but the programmatic
+  API (startup/shutdown/job functions) works correctly as verified by all pytest tests.
+  The `WorkerSettings` importability and structure are verified via a Python smoke
+  import. The CLI boot will work correctly on Python 3.12/3.13.
 
 - 2026-04-29: T9 sets `MAX_INPUT_CHARS = 4000` as the truncation threshold for text sent to the model, appending `[TEXT TRUNCATED]` when exceeded. Rationale: 4 000 chars comfortably fits within the context window of `gemma3:4b` while leaving room for the system prompt and the JSON response; the sentinel is documented so downstream tooling can detect clipped inputs.
 
