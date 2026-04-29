@@ -50,12 +50,12 @@ async def test_returns_lesson_id_and_count(
     concepts = [_make_concept("c1"), _make_concept("c2")]
 
     with (
-        patch("lyw_core.worker.jobs.ingest.DoclingParser") as MockParser,
-        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as MockChunker,
+        patch("lyw_core.worker.jobs.ingest.DoclingParser") as mock_parser,
+        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as mock_chunker,
         patch("lyw_core.worker.jobs.ingest.QdrantIndexer"),
     ):
-        MockParser.return_value.parse.return_value = MagicMock()
-        MockChunker.return_value.chunk.return_value = concepts
+        mock_parser.return_value.parse.return_value = MagicMock()
+        mock_chunker.return_value.chunk.return_value = concepts
 
         result = await ingest_source(fake_ctx, source_path=str(pdf), doc_id="doc1")
 
@@ -74,12 +74,12 @@ async def test_persists_lesson_graph(
     concepts = [_make_concept()]
 
     with (
-        patch("lyw_core.worker.jobs.ingest.DoclingParser") as MockParser,
-        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as MockChunker,
+        patch("lyw_core.worker.jobs.ingest.DoclingParser") as mock_parser,
+        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as mock_chunker,
         patch("lyw_core.worker.jobs.ingest.QdrantIndexer"),
     ):
-        MockParser.return_value.parse.return_value = MagicMock()
-        MockChunker.return_value.chunk.return_value = concepts
+        mock_parser.return_value.parse.return_value = MagicMock()
+        mock_chunker.return_value.chunk.return_value = concepts
 
         await ingest_source(fake_ctx, source_path=str(pdf), doc_id="doc1")
 
@@ -101,12 +101,12 @@ async def test_indexes_bm25(fake_ctx: dict[str, Any], tmp_path: Path) -> None:
     concepts = [_make_concept()]
 
     with (
-        patch("lyw_core.worker.jobs.ingest.DoclingParser") as MockParser,
-        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as MockChunker,
+        patch("lyw_core.worker.jobs.ingest.DoclingParser") as mock_parser,
+        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as mock_chunker,
         patch("lyw_core.worker.jobs.ingest.QdrantIndexer"),
     ):
-        MockParser.return_value.parse.return_value = MagicMock()
-        MockChunker.return_value.chunk.return_value = concepts
+        mock_parser.return_value.parse.return_value = MagicMock()
+        mock_chunker.return_value.chunk.return_value = concepts
 
         await ingest_source(fake_ctx, source_path=str(pdf), doc_id="doc1")
 
@@ -122,20 +122,20 @@ async def test_indexes_qdrant(fake_ctx: dict[str, Any], tmp_path: Path) -> None:
     concepts = [_make_concept()]
 
     with (
-        patch("lyw_core.worker.jobs.ingest.DoclingParser") as MockParser,
-        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as MockChunker,
-        patch("lyw_core.worker.jobs.ingest.QdrantIndexer") as MockIndexer,
+        patch("lyw_core.worker.jobs.ingest.DoclingParser") as mock_parser,
+        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as mock_chunker,
+        patch("lyw_core.worker.jobs.ingest.QdrantIndexer") as mock_indexer,
     ):
-        MockParser.return_value.parse.return_value = MagicMock()
-        MockChunker.return_value.chunk.return_value = concepts
+        mock_parser.return_value.parse.return_value = MagicMock()
+        mock_chunker.return_value.chunk.return_value = concepts
 
         await ingest_source(fake_ctx, source_path=str(pdf), doc_id="doc1")
 
-    MockIndexer.assert_called_once_with(
+    mock_indexer.assert_called_once_with(
         client=fake_ctx["qdrant_client"],
         embedding=fake_ctx["embedding"],
     )
-    MockIndexer.return_value.index.assert_called_once_with("lesson_doc1", concepts)
+    mock_indexer.return_value.index.assert_called_once_with("lesson_doc1", concepts)
 
 
 @pytest.mark.asyncio
