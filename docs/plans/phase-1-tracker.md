@@ -15,7 +15,7 @@ T-numbers as prerequisites.
 
 ## Tasks
 
-- [ ] [T0c: Package skeleton and test directory restructure](phase-1/T0c-package-skeleton.md)
+- [x] [T0c: Package skeleton and test directory restructure](phase-1/T0c-package-skeleton.md)
 - [ ] [T1: Settings, logging, runtime dependency manifest](phase-1/T1-settings-logging.md)
 - [ ] [T2: Filesystem adapter and data directory layout](phase-1/T2-filesystem-adapter.md)
 - [ ] [T3: Docker compose for Qdrant and Redis](phase-1/T3-services-healthcheck.md)
@@ -34,7 +34,10 @@ T-numbers as prerequisites.
 
 ## Decisions Made
 
-_(empty - record as work proceeds: date, decision, rationale.)_
+- 2026-04-29: T0c uses a placeholder `integration`-marked test until real
+  integration tests arrive. Rationale: `pytest -m integration` must exit 0
+  before any service-backed tests exist, and the placeholder keeps the marker
+  path selectable without requiring Qdrant, Redis, or end-to-end fixtures.
 
 ## Open Questions
 
