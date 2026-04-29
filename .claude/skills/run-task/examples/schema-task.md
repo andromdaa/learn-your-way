@@ -2,17 +2,26 @@
 
 Use whenever the task requires editing `src/lesson_graph/models.py`. The
 `PreToolUse` hook blocks edits to that file unless `SCHEMA_CHANGE=1` is
-in the environment.
+in the environment. Add it to `.claude/settings.json` at the start of the
+task; remove it during closeout.
 
 ## Session start
 
 ```bash
 git status
-SCHEMA_CHANGE=1 claude --model opusplan
+claude
 ```
 
-The env var must be set when launching Claude, not mid-session. The hook
-inspects the agent's environment at every tool call.
+Before the first edit to `src/lesson_graph/models.py`, add `SCHEMA_CHANGE=1`
+to the `env` block in `.claude/settings.json`:
+
+```json
+"env": { "SCHEMA_CHANGE": "1" }
+```
+
+The hook inspects the agent's environment at every tool call. Removing the
+var after the schema edit (in closeout) ensures the next task cannot
+accidentally bypass the guard.
 
 ## User opens with
 
@@ -66,7 +75,10 @@ inspects the agent's environment at every tool call.
 > - Tests use a fake `ModelClient` that returns canned outputs;
 >   no real model calls in tests.
 
-### 4. Plan output
+### 4. Plan (delegated to Opus subagent)
+
+Spawn `Agent(subagent_type=Plan, model=opus)` with the task context above.
+The subagent returns:
 
 Files:
 - modify `src/lesson_graph/models.py` — add `provenance` field
@@ -92,8 +104,8 @@ Order:
    - Implement chunker.
    - Iterate on prompts inside the fake; do not modify tests to fit
      prompt output.
-   - Commit: `feat: LLM-refined chunker producing refined ConceptNodes (T7)`.
-3. Run full CI.
+   - Commit: `feat(T7): LLM-refined chunker producing refined ConceptNodes`.
+3. Run full pre-flight.
 
 Do not touch:
 - `AssessmentItem`, `DerivedAsset`, `SourceSpan`, `LessonGraph` — schema
@@ -101,25 +113,20 @@ Do not touch:
 - The heuristic chunker (T6's territory; assumed shipped)
 - Any retrieval code (T8/T9/T10)
 
-Verification:
-```bash
-pytest tests/test_lesson_graph.py -v       # schema first
-pytest tests/unit/test_llm_refined_chunker.py -v
-mypy
-ruff check . && ruff format --check .
-pytest --cov
-```
-
-Stop. Await approval.
-
-### 5. Hook will fire on the schema edit
+### 5. Hook behaviour on the schema edit
 
 When the agent attempts `Edit(src/lesson_graph/models.py)`, the hook
-checks `SCHEMA_CHANGE=1` and allows. If the env var is missing, the
-hook blocks with a clear message and the session must be restarted with
-the variable set. Do not work around the hook; restart the session.
+checks `SCHEMA_CHANGE=1` in the settings.json env block and allows. If the
+var is missing, the hook blocks with a clear message — add the env block
+and retry; do not work around the hook.
 
 ### 6. Closeout
+
+Pre-flight:
+
+```bash
+uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest --cov --cov-fail-under=90
+```
 
 Tracker update:
 - Tick T7.
@@ -131,15 +138,30 @@ Tracker update:
   > and the prefix bleeds into downstream prompts. The Literal field
   > is type-checked, exhaustive at match time, and free at runtime.
 
-PR description must include:
-- Spec deliverable covered ("Chunker emits ConceptNode instances ...").
-- Schema change callout: "This PR adds a required field to
-  `ConceptNode`. ADR-0008 documents the change. All existing tests
-  updated."
-- ADR link.
+```bash
+git add docs/plans/phase-1-ingest-tracker.md
+git commit -m "$(cat <<'EOF'
+chore(T7): tick T7 complete, add decisions to phase-1-tracker
 
-End session. `/clear`. The next session must NOT use `SCHEMA_CHANGE=1`
-unless its task also requires it.
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
+```
+
+Push and merge:
+
+```bash
+git push -u origin feat/T7-heuristic-chunker
+gh pr create --title "T7: ConceptNode provenance field and LLM-refined chunker" \
+  --body "Covers spec deliverable: 'Chunker emits ConceptNode instances with at least one non-empty SourceSpan.' Schema change: adds required \`provenance\` field. ADR-0008 documents the change. All existing tests updated. See \`docs/plans/phase-1/T7-llm-refined-chunker.md\`."
+gh pr merge --squash --delete-branch
+git checkout main && git pull --ff-only
+```
+
+Remove `SCHEMA_CHANGE=1` from `.claude/settings.json` env block. The next
+task must not inherit it.
+
+Then run `/clear` to reset context, scan the tracker for the next `[ ]` entry, and re-invoke run-task for that T-number.
 
 ## What good looks like
 
@@ -151,3 +173,4 @@ unless its task also requires it.
   invariant.
 - Hook fired on the legitimate edit and allowed it (verify by checking
   no "blocked" messages in the session log).
+- `SCHEMA_CHANGE=1` removed from settings.json by end of closeout.

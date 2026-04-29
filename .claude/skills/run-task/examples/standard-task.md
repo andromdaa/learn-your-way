@@ -9,8 +9,8 @@ dependency, and does not touch real services.
 Clean tree. Plain invocation:
 
 ```bash
-git status                          # confirm clean
-claude --model opusplan
+git status
+claude
 ```
 
 ## User opens with
@@ -36,7 +36,7 @@ claude --model opusplan
 - Schema change? No. `src/lesson_graph/models.py` not in file list.
 - New dependency? No.
 - Real services? No. In-memory only.
-- TDD-strict? Yes — pure deterministic logic, split into two prompts.
+- TDD-strict? Yes — deterministic logic; commit failing tests before implementing.
 
 ### 3. Acceptance readback
 
@@ -57,7 +57,10 @@ claude --model opusplan
 > adapter create it on first use, or fail loudly? I will assume create-on-first-use
 > and surface this in "Decisions made" unless you say otherwise.
 
-### 4. Plan output (to user)
+### 4. Plan (delegated to Opus subagent)
+
+Spawn `Agent(subagent_type=Plan, model=opus)` with the task context above.
+The subagent returns:
 
 Files:
 - create `src/lyw_core/storage/__init__.py`
@@ -67,7 +70,7 @@ Files:
 
 Failing test (written first):
 ```python
-# tests/unit/test_filesystem.py — full content shown in plan
+# tests/unit/test_filesystem.py — full content in subagent output
 ```
 
 Order:
@@ -79,10 +82,10 @@ Order:
 
 Verification:
 ```bash
-ruff check . && uv run ruff format --check .
-mypy
-pytest tests/unit/test_filesystem.py -v
-pytest --cov
+uv run ruff check . && uv run ruff format --check .
+uv run mypy
+uv run pytest tests/unit/test_filesystem.py -v
+uv run pytest --cov
 ```
 
 Do not touch:
@@ -90,34 +93,41 @@ Do not touch:
 - Any other `tests/unit/` file
 - `docs/`, `specs/`, `AGENTS.md`, ADRs
 
-Stop. Await approval.
+### 5. Execute
 
-### 5. After user approval
-
-Switch to auto-accept under approved plan. Execute in order. Show raw
-pytest output at each checkpoint. Commit at checkpoints:
+Branch, write failing tests, commit:
 
 ```bash
-git checkout -b feat/T1-data-directory
-# write tests, commit
+git fetch origin && git checkout -B feat/T1-data-directory origin/main
+# write tests/unit/test_filesystem.py
+uv run pytest tests/unit/test_filesystem.py -v   # confirm red
 git add tests/unit/test_filesystem.py
-git commit -m "test: failing tests for local filesystem adapter (T1)"
-# implement, commit
+git commit -m "$(cat <<'EOF'
+test(T1): failing tests for local filesystem adapter
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
+```
+
+Implement, run pre-flight, commit:
+
+```bash
+# implement src/lyw_core/storage/
+uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest --cov --cov-fail-under=90
 git add src/lyw_core/storage/
-git commit -m "feat: local filesystem adapter rooted at data_dir (T1)"
-# any config change, commit separately
+git commit -m "$(cat <<'EOF'
+feat(T1): local filesystem adapter rooted at data_dir
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ### 6. Closeout
 
-```bash
-make ci    # or the configured equivalent
-```
-
-Show full output.
-
-Update `docs/plans/phase-1-ingest-tracker.md`:
-- Tick the T1 box.
+Update tracker:
+- Tick the T1 box in `docs/plans/phase-1-ingest-tracker.md`.
 - Append to "Decisions made":
 
   > 2026-MM-DD — T1: filesystem adapter creates `data_dir` on first
@@ -127,13 +137,27 @@ Update `docs/plans/phase-1-ingest-tracker.md`:
   > silent creation outside `data_dir` is bounded by the traversal
   > check.
 
-Open PR:
 ```bash
-gh pr create --title "T1: local filesystem adapter rooted at data_dir" \
-  --body "Covers spec deliverable: 'Local data directory layout for source PDFs and derived assets.' See \`docs/plans/phase-1/T1-data-directory.md\`."
+git add docs/plans/phase-1-ingest-tracker.md
+git commit -m "$(cat <<'EOF'
+chore(T1): tick T1 complete, add decisions to phase-1-tracker
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
 ```
 
-End session. `/clear`.
+Push and merge:
+
+```bash
+git push -u origin feat/T1-data-directory
+gh pr create --title "T1: local filesystem adapter rooted at data_dir" \
+  --body "Covers spec deliverable: 'Local data directory layout for source PDFs and derived assets.' See \`docs/plans/phase-1/T1-data-directory.md\`."
+gh pr merge --squash --delete-branch
+git checkout main && git pull --ff-only
+```
+
+Then run `/clear` to reset context, scan the tracker for the next `[ ]` entry, and re-invoke run-task for that T-number.
 
 ## What good looks like
 
