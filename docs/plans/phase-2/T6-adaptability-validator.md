@@ -16,8 +16,8 @@ to the target than the original's. Implements
 
 - Create `src/lyw_core/validators/adaptability.py`.
 - Create `tests/unit/test_validators_adaptability.py`.
-- Possibly modify `pyproject.toml` if a readability library is added
-  (see open question Q1).
+- Modify `pyproject.toml`: `uv add textstat` (pin minor, pre-1.0); add
+  `[[tool.mypy.overrides]]` scoped to `textstat.*` (untyped stubs).
 
 ## Depends On
 
@@ -44,9 +44,7 @@ to the target than the original's. Implements
 
 ## Risk Notes
 
-- Blocked on open question Q1 (readability library). If `textstat` is
-  added, add a `[[tool.mypy.overrides]]` suppression for `textstat.*`
-  (untyped stubs). If implementing Flesch-Kincaid manually, a
-  vowel-run syllable heuristic is ~15 lines and sufficient for the
-  approximation needed here; tests do not need syllable-perfect
-  accuracy, only directional correctness.
+- Uses `textstat` for Flesch-Kincaid Grade Level. Pin minor version
+  (pre-1.0 API is unstable across minor bumps). Add
+  `[[tool.mypy.overrides]]` with `ignore_missing_imports = true` scoped
+  to `textstat.*` — the package ships no type stubs.

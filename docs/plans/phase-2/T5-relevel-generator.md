@@ -58,6 +58,8 @@ Unit tests mock the `ModelClient`. Real Ollama calls go in
 - Writing the DerivedAsset to the filesystem (caller's responsibility;
   see risk note).
 - Combining re-leveling with example replacement into a single call.
+- Wiring into the `POST /lessons/{id}/generate` + Arq worker (phase 3;
+  see `specs/phase-3-modalities.md`).
 
 ## Risk Notes
 
@@ -66,6 +68,3 @@ Unit tests mock the `ModelClient`. Real Ollama calls go in
   (API route or Arq worker) is responsible for persisting the text via
   `lyw_core.storage.fs` and constructing the `DerivedAsset`. This is
   the correct layering — note it in the module docstring.
-- Open question Q5 (worker integration) should be resolved before T5
-  begins so the intended call site is known and the generator's
-  signature can be validated against it.

@@ -56,6 +56,8 @@ Unit tests mock the `ModelClient`. Real Ollama calls in
 - Re-leveling (T5).
 - Combining replacement output with re-leveling into a final
   `DerivedAsset` (caller's responsibility).
+- Wiring into the Arq worker (phase 3; see
+  `specs/phase-3-modalities.md`).
 
 ## Risk Notes
 

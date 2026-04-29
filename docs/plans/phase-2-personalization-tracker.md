@@ -73,17 +73,4 @@ with or extends `specs/phase-2-personalization.md`)_
 
 ## Pre-Task Open Questions
 
-**Q1 — Readability library (blocks T6):** The adaptability validator
-needs a readability score. Option A: add `textstat` as a runtime dep
-(`uv add textstat`; add a `[[tool.mypy.overrides]]` suppression for
-`textstat.*`). Option B: embed a minimal Flesch-Kincaid implementation
-(~40 lines, no new dep, slightly inaccurate syllable counting via
-vowel-run heuristic). Decide before T6 begins.
-
-**Q5 — Personalization pipeline + Arq worker integration (shapes T5,
-T7):** Do T5 and T7 stay as standalone library code (generators
-callable directly, no Arq integration), or does phase 2 also wire them
-into the existing `POST /lessons/{id}/generate` + Arq worker? The spec
-is silent. Conservative reading: generators are library code in phase
-2; worker integration is phase-3 work alongside slides/mind maps.
-Confirm before T5 begins.
+_(empty)_
