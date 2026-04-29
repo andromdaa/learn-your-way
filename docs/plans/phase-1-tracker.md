@@ -17,7 +17,7 @@ T-numbers as prerequisites.
 
 - [x] [T0c: Package skeleton and test directory restructure](phase-1/T0c-package-skeleton.md)
 - [x] [T1: Settings, logging, runtime dependency manifest](phase-1/T1-settings-logging.md)
-- [ ] [T2: Filesystem adapter and data directory layout](phase-1/T2-filesystem-adapter.md)
+- [x] [T2: Filesystem adapter and data directory layout](phase-1/T2-filesystem-adapter.md)
 - [ ] [T3: Docker compose for Qdrant and Redis](phase-1/T3-services-healthcheck.md)
 - [ ] [T4: SQLite schema, migrations, and source/lesson DAO](phase-1/T4-sqlite-dao.md)
 - [ ] [T5: Docling PDF parser to ParsedDocument](phase-1/T5-docling-parser.md)
@@ -33,6 +33,12 @@ T-numbers as prerequisites.
 - [ ] [T15: FastAPI sources and lessons endpoints](phase-1/T15-fastapi-endpoints.md)
 
 ## Decisions Made
+
+- 2026-04-29: T2 uses SHA-256 with a two-char prefix shard for asset paths
+  (`assets/<xx>/<full_digest>[.ext]`). Rationale: mirrors git object layout,
+  gives deterministic paths, avoids directory fan-out at scale without a
+  separate registry. Path traversal protection resolves all paths and checks
+  the resolved prefix against `data_dir`, raising `ValueError` on violation.
 
 - 2026-04-29: T0c uses a placeholder `integration`-marked test until real
   integration tests arrive. Rationale: `pytest -m integration` must exit 0
