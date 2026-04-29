@@ -30,7 +30,7 @@ T-numbers as prerequisites.
 - [x] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
 - [x] [T13: Inspection CLI](phase-1/T13-inspection-cli.md)
 - [x] [T14: Arq worker scaffolding and ingest pipeline](phase-1/T14-arq-ingest-worker.md)
-- [ ] [T15: FastAPI sources and lessons endpoints](phase-1/T15-fastapi-endpoints.md)
+- [x] [T15: FastAPI sources and lessons endpoints](phase-1/T15-fastapi-endpoints.md)
 
 ## Decisions Made
 
@@ -90,6 +90,23 @@ T-numbers as prerequisites.
   The job checks `get_source()` first so re-ingestion of an existing source does not
   fail with a UNIQUE constraint error. SHA-256 of the PDF bytes is computed inline
   (no separate file-hashing utility needed at this stage).
+
+- 2026-04-29: T15 uses `create_app(lifespan=...)` factory so tests inject a
+  null lifespan without touching real DB or Redis. Rationale: FastAPI's
+  `TestClient` with `with` block runs the lifespan; a factory that accepts an
+  override is the minimal seam that avoids monkeypatching the module-level `app`
+  object and keeps each test isolated.
+
+- 2026-04-29: T15 derives `doc_id` as the full SHA-256 hex digest of the
+  uploaded PDF bytes. Rationale: consistent with T2's asset-path shard
+  strategy, gives deterministic re-upload deduplication without a separate
+  ID allocation step, and matches what the ingest job expects.
+
+- 2026-04-29: T15 uses the `Annotated[T, Depends(...)]` FastAPI pattern (no
+  default values on dep parameters) instead of `param: T = Depends(...)`.
+  Rationale: the latter triggers ruff B008 ("function call in default
+  argument"); the Annotated form is the recommended FastAPI v2+ style and
+  passes ruff without a noqa suppression.
 
 - 2026-04-29: T14 pins `arq>=0.25.0` rather than upgrading to 0.26+. Rationale:
   arq 0.26+ requires `redis[hiredis]<6` which conflicts with the project's
