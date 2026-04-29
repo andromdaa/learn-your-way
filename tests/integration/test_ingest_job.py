@@ -59,9 +59,7 @@ def ctx(
 async def test_ingest_persists_lesson(ctx: dict[str, Any]) -> None:
     from lyw_core.worker.jobs.ingest import ingest_source
 
-    result = await ingest_source(
-        ctx, source_path=str(_FIXTURE_PDF), doc_id="tiny_test"
-    )
+    result = await ingest_source(ctx, source_path=str(_FIXTURE_PDF), doc_id="tiny_test")
 
     assert result["lesson_id"] == "lesson_tiny_test"
     assert result["concept_count"] > 0

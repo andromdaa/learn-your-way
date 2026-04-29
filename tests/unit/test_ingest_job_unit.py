@@ -64,9 +64,7 @@ async def test_returns_lesson_id_and_count(
 
 
 @pytest.mark.asyncio
-async def test_persists_lesson_graph(
-    fake_ctx: dict[str, Any], tmp_path: Path
-) -> None:
+async def test_persists_lesson_graph(fake_ctx: dict[str, Any], tmp_path: Path) -> None:
     from lyw_core.worker.jobs.ingest import ingest_source
 
     pdf = tmp_path / "test.pdf"
