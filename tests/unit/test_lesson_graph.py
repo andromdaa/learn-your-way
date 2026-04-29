@@ -181,6 +181,49 @@ def test_assessment_item_rejects_unknown_kind() -> None:
         )
 
 
+def test_assessment_item_correct_answer_and_bloom_level_round_trip() -> None:
+    item = AssessmentItem(
+        id="q1",
+        kind="mcq",
+        prompt="What drives photosynthesis?",
+        rationale="Sunlight provides the energy for the reaction.",
+        source_spans=[_span()],
+        difficulty="medium",
+        correct_answer="Sunlight",
+        bloom_level="understand",
+    )
+    assert item.correct_answer == "Sunlight"
+    assert item.bloom_level == "understand"
+    rebuilt = AssessmentItem.model_validate_json(item.model_dump_json())
+    assert rebuilt == item
+
+
+def test_assessment_item_correct_answer_and_bloom_level_default_to_none() -> None:
+    item = AssessmentItem(
+        id="q1",
+        kind="mcq",
+        prompt="p",
+        rationale="r",
+        source_spans=[_span()],
+        difficulty="easy",
+    )
+    assert item.correct_answer is None
+    assert item.bloom_level is None
+
+
+def test_assessment_item_rejects_unknown_bloom_level() -> None:
+    with pytest.raises(ValidationError):
+        AssessmentItem(
+            id="q1",
+            kind="mcq",
+            prompt="p",
+            rationale="r",
+            source_spans=[_span()],
+            difficulty="easy",
+            bloom_level="synthesis",
+        )
+
+
 # DerivedAsset --------------------------------------------------------------
 
 

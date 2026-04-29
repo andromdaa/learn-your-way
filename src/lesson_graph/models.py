@@ -59,7 +59,10 @@ class ConceptNode(BaseModel):
     summary: str
     learning_objective: str
     source_spans: list[SourceSpan] = Field(min_length=1)
-    prerequisites: list[str] = Field(default_factory=list)
+    prerequisites: list[str] = Field(
+        default_factory=list,
+        description="Ordered by priority; the gap detector treats index 0 as the highest-priority prerequisite.",
+    )
     provenance: Literal["heuristic", "llm_refined"] = "heuristic"
 
 
@@ -77,6 +80,11 @@ class AssessmentItem(BaseModel):
     rationale: str
     source_spans: list[SourceSpan] = Field(min_length=1)
     difficulty: Literal["easy", "medium", "hard"]
+    correct_answer: str | None = None
+    bloom_level: (
+        Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
+        | None
+    ) = None
 
 
 class DerivedAsset(BaseModel):

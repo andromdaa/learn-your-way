@@ -44,6 +44,7 @@ class ConceptNode(BaseModel):
     summary: str
     learning_objective: str
     source_spans: list[SourceSpan] = Field(min_length=1)
+    # Ordered by priority; index 0 = highest-priority prerequisite (ADR-0012)
     prerequisites: list[str] = Field(default_factory=list)
     provenance: Literal["heuristic", "llm_refined"] = "heuristic"  # ADR-0008
 
@@ -55,6 +56,11 @@ class AssessmentItem(BaseModel):
     rationale: str
     source_spans: list[SourceSpan]
     difficulty: Literal["easy", "medium", "hard"]
+    correct_answer: str | None = None  # MCQ only; None for other kinds
+    bloom_level: (
+        Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
+        | None
+    ) = None  # set by MCQ generator; None treated as "remember" by active-learning validator
 
 
 class DerivedAsset(BaseModel):
@@ -91,6 +97,15 @@ These hold regardless of modality, generator, or pipeline phase:
 - Every `AssessmentItem` references at least one `ConceptNode` via
   `concept_id` (added in phase 2) and at least one `SourceSpan`. The
   cited spans must be a subset of the parent concept's span range.
+- `AssessmentItem.correct_answer` is MCQ-specific. Generators for
+  other item kinds (`short_answer`, `matching`) may leave it `None`.
+  The `POST /attempts` endpoint must handle `None` gracefully.
+- `AssessmentItem.bloom_level` is set by the MCQ generator prompt. A
+  `None` value is treated as `"remember"` (most conservative) by the
+  active learning validator so that untagged items do not silently pass
+  the section-quality gate.
+- `ConceptNode.prerequisites` is ordered by priority. The gap detector
+  treats index 0 as the highest-priority prerequisite (ADR-0012).
 - Every `DerivedAsset` references at least one concept in
   `based_on_concepts`.
 - `personalization_profile` is `dict[str, Any]` until phase 2 ships.

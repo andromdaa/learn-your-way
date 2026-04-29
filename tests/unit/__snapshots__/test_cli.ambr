@@ -16,11 +16,11 @@
 # name: test_run_inspect_stdout_snapshot
   '''
   Concepts (2)
-  ├── [0c9d343e3353] Methods
+  ├── [7e6ef6b6539b] Methods
   │     Objective : Understand Methods
   │     Spans     : p1-p1  chars 31-57
   │     Prereqs   : (none)
-  └── [992bc8c9cdd5] Introduction
+  └── [f4fa346b61de] Introduction
         Objective : Understand Introduction
         Spans     : p1-p1  chars 0-30
         Prereqs   : (none)
