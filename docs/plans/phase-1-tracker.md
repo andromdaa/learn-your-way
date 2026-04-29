@@ -26,7 +26,7 @@ T-numbers as prerequisites.
 - [x] [T8: OllamaModelClient implementing ModelClient](phase-1/T8-ollama-client.md)
 - [ ] [T9: LLM-refined chunker](phase-1/T9-llm-refined-chunker.md)
 - [x] [T10: BM25 retrieval pipeline and embedding model ADR](phase-1/T10-bm25-retrieval.md)
-- [ ] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
+- [x] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
 - [ ] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
 - [ ] [T13: Inspection CLI](phase-1/T13-inspection-cli.md)
 - [ ] [T14: Arq worker scaffolding and ingest pipeline](phase-1/T14-arq-ingest-worker.md)
@@ -75,6 +75,12 @@ T-numbers as prerequisites.
 - 2026-04-29: T7 `HeuristicChunker` attaches the heading only to the first sub-group when a section is split by `max_chars`; subsequent sub-groups are headingless. Rationale: avoids duplicate title strings and produces distinct `id` hashes (derived from `char_start:char_end`) so later tasks can reference each chunk unambiguously.
 
 - 2026-04-29: T7 seeds the syrupy snapshot with `--snapshot-update` on first run. Rationale: `no_implicit_reexport = true` in mypy config requires importing `SnapshotAssertion` from `syrupy.assertion` (not the top-level `syrupy`); this is the canonical submodule path.
+
+- 2026-04-29: T11 uses `query_points` (not the removed `search`) from qdrant-client 1.17.1. Rationale: `QdrantClient.search` was removed in the 1.x line; `query_points` is the stable replacement and accepts `list[float]` vectors directly, returning a `QueryResponse` with a `.points` attribute containing `list[ScoredPoint]`.
+
+- 2026-04-29: T11 adds unit tests (mocked QdrantClient + mocked SentenceTransformer) alongside the required integration tests. Rationale: `embedding.py` and `qdrant.py` would otherwise have ~34–70% coverage from integration tests alone, falling below the 90% gate; mock-based unit tests bring the project to 92.7% without requiring Docker or model downloads.
+
+- 2026-04-29: T11 uses delete-then-create (via `collection_exists` + `delete_collection` + `create_collection`) rather than the deprecated `recreate_collection`. Rationale: `recreate_collection` is removed in the qdrant-client version pinned by this project; the explicit delete-then-create is the recommended migration path and makes re-indexing intent clear.
 
 ## Open Questions
 
