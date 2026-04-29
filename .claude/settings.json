@@ -22,7 +22,7 @@
           {
             "type": "command",
             "if": "Bash(git worktree add *)",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/worktree-uv-setup.sh",
+            "command": ".claude/hooks/worktree-uv-setup.sh",
             "timeout": 300,
             "statusMessage": "Setting up uv venv in new worktree…"
           }

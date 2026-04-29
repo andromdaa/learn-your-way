@@ -55,11 +55,11 @@ Rationale for each choice lives in `docs/adr/`.
 Quick commands:
 
 ```bash
-ruff check .                # lint
-ruff format .               # format
-mypy                        # type-check
-pytest --cov                # tests + coverage
-pre-commit run --all-files  # run all pre-commit hooks
+uv run ruff check .                # lint
+uv run ruff format .               # format
+uv run mypy                        # type-check
+uv run pytest --cov                # tests + coverage
+uv run pre-commit run --all-files  # run all pre-commit hooks
 ```
 
 ## Working agreement
