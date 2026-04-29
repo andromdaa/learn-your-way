@@ -28,7 +28,7 @@ T-numbers as prerequisites.
 - [x] [T10: BM25 retrieval pipeline and embedding model ADR](phase-1/T10-bm25-retrieval.md)
 - [x] [T11: Qdrant dense retrieval](phase-1/T11-qdrant-retrieval.md)
 - [ ] [T12: Cross-encoder reranker and hybrid pipeline](phase-1/T12-hybrid-reranker.md)
-- [ ] [T13: Inspection CLI](phase-1/T13-inspection-cli.md)
+- [x] [T13: Inspection CLI](phase-1/T13-inspection-cli.md)
 - [ ] [T14: Arq worker scaffolding and ingest pipeline](phase-1/T14-arq-ingest-worker.md)
 - [ ] [T15: FastAPI sources and lessons endpoints](phase-1/T15-fastapi-endpoints.md)
 
@@ -87,6 +87,10 @@ T-numbers as prerequisites.
 - 2026-04-29: T9 sets `MAX_INPUT_CHARS = 4000` as the truncation threshold for text sent to the model, appending `[TEXT TRUNCATED]` when exceeded. Rationale: 4 000 chars comfortably fits within the context window of `gemma3:4b` while leaving room for the system prompt and the JSON response; the sentinel is documented so downstream tooling can detect clipped inputs.
 
 - 2026-04-29: T9 wraps both `json.JSONDecodeError` and Pydantic `ValidationError` in `LLMRefinerError` rather than letting them propagate bare. Rationale: callers need a single typed error to catch for retry/fallback logic; wrapping with `from exc` preserves the original traceback for debugging.
+
+- 2026-04-29: T13 uses the stable fixture PDF path (not `tmp_path`) as the `doc_id` in the stdout snapshot test. Rationale: HeuristicChunker hashes `doc_id::char_start:char_end` to produce node IDs; a `tmp_path`-based path changes each test run, making the snapshot unstable. Passing `_FIXTURE_PDF` (a committed file) gives a constant doc_id and therefore constant node IDs across runs.
+
+- 2026-04-29: T13 marks the real-subprocess test `@pytest.mark.integration` and leaves the unit tests fully mocked. Rationale: `DoclingParser` requires ML model inference for real PDFs; following the T5 pattern of mocking `DocumentConverter.convert` keeps unit tests fast and model-free, while the integration marker preserves the ability to run the full round-trip against the actual fixture.
 
 ## Open Questions
 
