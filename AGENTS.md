@@ -56,7 +56,6 @@ Rationale for each choice lives in `docs/adr/`.
 Quick commands:
 
 ```bash
-uv sync --extra dev         # set up environment
 ruff check .                # lint
 ruff format .               # format
 mypy                        # type-check
@@ -95,12 +94,11 @@ the research document on every point.
 
 This machine runs NixOS with direnv + nix-direnv. The `flake.nix` dev
 shell activates automatically on `cd` (after `direnv allow`), providing
-nixpkgs-linked `ruff`, `mypy`, and `python312`.
+nixpkgs-linked `ruff`, `mypy`, `precommit`, and `python312`.
 
 Run tools directly — no `uv run` or `nix develop --command` prefix needed:
 
 ```bash
-uv sync --extra dev
 ruff check .
 ruff format .
 mypy
