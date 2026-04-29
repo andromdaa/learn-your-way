@@ -75,6 +75,9 @@ addopts = [
     "--strict-config",
     "-ra",
 ]
+markers = [
+    "integration: marks tests that require external services or end-to-end integration paths",
+]
 
 [tool.coverage.run]
 source = ["src"]
