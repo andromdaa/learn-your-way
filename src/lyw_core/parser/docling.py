@@ -1,0 +1,62 @@
+from pathlib import Path
+
+from docling.document_converter import DocumentConverter
+from docling_core.types.doc import DocItem
+
+from lyw_core.parser.models import ParsedBlock, ParsedDocument
+
+
+class DoclingParser:
+    def __init__(self) -> None:
+        self._converter = DocumentConverter()
+
+    def parse(self, path: Path) -> ParsedDocument:
+        result = self._converter.convert(str(path))
+        doc = result.document
+
+        text_parts: list[str] = []
+        blocks: list[ParsedBlock] = []
+        cursor = 0
+
+        for item, _level in doc.iterate_items():
+            if not isinstance(item, DocItem):
+                continue
+            text: str = getattr(item, "text", None) or ""
+            if not text:
+                continue
+
+            page_number = 1
+            prov = getattr(item, "prov", None)
+            if prov:
+                page_number = prov[0].page_no
+
+            block_type = str(item.label)
+            block_id = str(item.self_ref)
+
+            char_start = cursor
+            char_end = cursor + len(text)
+
+            blocks.append(
+                ParsedBlock(
+                    block_id=block_id,
+                    page_number=page_number,
+                    block_type=block_type,
+                    text=text,
+                    char_start=char_start,
+                    char_end=char_end,
+                )
+            )
+            text_parts.append(text)
+            cursor = char_end + 1  # +1 for the \n separator
+
+        full_text = "\n".join(text_parts)
+        page_count = doc.num_pages() if callable(doc.num_pages) else int(doc.num_pages)
+        if not page_count and blocks:
+            page_count = max(b.page_number for b in blocks)
+
+        return ParsedDocument(
+            source_path=str(path),
+            text=full_text,
+            blocks=blocks,
+            page_count=max(page_count, 1),
+        )

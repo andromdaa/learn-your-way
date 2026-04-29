@@ -78,6 +78,14 @@ disallow_untyped_decorators = false
 module = "testcontainers.*"
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "lyw_core.healthcheck"
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = "fpdf.*"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

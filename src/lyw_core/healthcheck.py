@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from dataclasses import dataclass
+from typing import Any
 
 import httpx
 import redis.asyncio
@@ -31,9 +32,11 @@ async def ping_qdrant(qdrant_url: str) -> ServiceStatus:
 
 
 async def ping_redis(redis_url: str) -> ServiceStatus:
-    conn = redis.asyncio.from_url(redis_url, socket_connect_timeout=5)
+    conn: Any = redis.asyncio.from_url(  # type: ignore[no-untyped-call]
+        redis_url, socket_connect_timeout=5
+    )
     try:
-        await conn.ping()  # type: ignore[misc]
+        await conn.ping()
         return ServiceStatus(name="redis", healthy=True, detail="ok")
     except Exception as exc:
         return ServiceStatus(name="redis", healthy=False, detail=str(exc))
