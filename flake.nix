@@ -12,20 +12,36 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        python = pkgs.python313.withPackages (ps: with ps; [
+          # ---- Runtime -------------------------------------------------------
+          aiosqlite
+          httpx
+          pydantic
+          pydantic-settings
+          qdrant-client
+          redis
+          hiredis         # pulled in via redis[hiredis]
+          structlog
+
+          # ---- Dev / test ----------------------------------------------------
+          pytest
+          pytest-cov
+          pytest-asyncio
+          mypy
+          pydantic
+          testcontainers
+        ]);
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            python312
-            uv
-            ruff
-            mypy
-            pre-commit
+          packages = [
+            python
+            pkgs.ruff
+            pkgs.pre-commit
           ];
 
           shellHook = ''
-            export PYTHONPATH="$PWD/src''${PYTHONPATH:+:$PYTHONPATH}"
-            uv sync --extra dev --quiet
+            export PYTHONPATH="$PWD/src:$PYTHONPATH"
             pre-commit install --install-hooks 2>/dev/null
           '';
         };
