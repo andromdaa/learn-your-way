@@ -1,9 +1,9 @@
 # Example: TDD-strict task (T3 — round-trip span verifier)
 
 Use for tasks that are pure, deterministic, and have an unambiguous
-contract. The split-prompt pattern prevents the agent from co-evolving
-the tests and the implementation, which is how spec-incorrect code
-ships under a green suite.
+contract. Failing tests are committed before any implementation exists.
+This prevents the agent from co-evolving tests and implementation, which
+is how spec-incorrect code ships under a green suite.
 
 T3 is the canonical example: a function that takes a `ParsedDocument`
 and a list of `SourceSpan` instances and asserts every character in
@@ -13,7 +13,7 @@ every span resolves back to the source. There is one right answer.
 
 ```bash
 git status
-claude --model opusplan
+claude
 ```
 
 ## User opens with
@@ -42,108 +42,90 @@ claude --model opusplan
 - New dependency? Adds `hypothesis` if not already present (already
   in dev deps per the C-series backlog — verify before adding).
 - Real services? No.
-- **TDD-strict: YES.** Split prompt.
+- **TDD-strict: YES.** Commit failing tests before implementing.
 
-### 3. Two-prompt protocol
+### 3. Plan (delegated to Opus subagent)
 
-The agent's plan is delivered in two halves. The first ends with
-"stop and commit failing tests." The second begins after the user
-explicitly says "implement."
+Spawn `Agent(subagent_type=Plan, model=opus)` with the task context.
+The subagent returns the full test suite to write, the implementation
+plan, and the verification commands. Because TDD-strict is flagged, the
+plan explicitly separates the test-commit step from the implementation
+step.
 
-#### Phase A — failing tests only
+### 4. TDD execution
 
-Plan output:
-
-> I will write only `tests/unit/test_span_verifier.py` in this phase.
-> No implementation. No `src/lyw_core/verify/` files yet.
->
-> Test cases:
-> - Empty span list returns success.
-> - Single span exactly matching a substring returns success.
-> - Span with `char_end` past document length raises
->   `SpanResolutionError`.
-> - Span where `(char_start, char_end)` slice equals the recorded
->   text returns success.
-> - Span where the slice does not equal the recorded text raises
->   `SpanResolutionError` with both expected and actual in the message.
-> - Multi-page document, span crosses page boundary, slice resolves
->   correctly.
-> - Property-based (Hypothesis): for any valid document and any
->   span constructed from a real substring of it, verification
->   succeeds. For any span with at least one off-by-one mutation,
->   verification fails.
->
-> After writing the file, I will run pytest, show the raw failing
-> output (ImportError or NameError on the verifier module), and stop.
-> I will not implement anything until you tell me to.
-
-User approves. Agent writes tests. Agent runs:
+**Step 1 — write failing tests and commit:**
 
 ```bash
-pytest tests/unit/test_span_verifier.py -v
+git fetch origin && git checkout -B feat/T3-span-verifier origin/main
 ```
 
-Output is shown raw. Tests fail because the module does not exist.
-Agent commits:
+Write `tests/unit/test_span_verifier.py` per the subagent's plan. Test
+cases must include:
+
+- Empty span list returns success.
+- Single span exactly matching a substring returns success.
+- Span with `char_end` past document length raises `SpanResolutionError`.
+- Span where the slice does not equal the recorded text raises
+  `SpanResolutionError` with both expected and actual in the message.
+- Multi-page document, span crosses page boundary, resolves correctly.
+- Property-based (Hypothesis): for any valid document and any span
+  constructed from a real substring of it, verification succeeds. For
+  any span with at least one off-by-one mutation, verification fails.
+
+Run and show raw output:
 
 ```bash
-git checkout -b feat/T3-span-verifier
+uv run pytest tests/unit/test_span_verifier.py -v
+```
+
+Tests fail (module does not exist). Commit:
+
+```bash
 git add tests/unit/test_span_verifier.py
-git commit -m "test: failing tests for round-trip span verifier (T3)"
+git commit -m "$(cat <<'EOF'
+test(T3): failing tests for round-trip span verifier
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
 ```
 
-Agent stops. Session is in a deliberate pause.
+**Step 2 — implement (test file is now closed for edits):**
 
-#### Phase B — implement only
-
-User reviews the test file. Edits if needed (`Ctrl+G` opens it in the
-editor). When satisfied, user sends:
-
-> Implement T3 to pass these tests. Do not modify any file under
-> `tests/`. If a test is wrong, stop and tell me — do not edit it.
-
-Agent now implements `src/lyw_core/verify/spans.py`. Critically: the
-test file is closed for edits in this phase. If the agent finds a
-test it believes is wrong, it must surface the conflict and stop, not
-"fix" the test.
-
-Agent runs after each meaningful change:
+Implement `src/lyw_core/verify/spans.py`. Run tests after each meaningful
+change and show raw output. If a test appears wrong, surface the conflict
+and stop — do not edit it. When green, run full pre-flight:
 
 ```bash
-pytest tests/unit/test_span_verifier.py -v
+uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest --cov --cov-fail-under=90
 ```
 
-Shows raw output. When green, runs full CI:
-
-```bash
-mypy
-ruff check . && ruff format --check .
-pytest --cov
-```
-
-Commits:
+Commit:
 
 ```bash
 git add src/lyw_core/verify/
-git commit -m "feat: round-trip span verifier (T3)"
+git commit -m "$(cat <<'EOF'
+feat(T3): round-trip span verifier
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
 ```
 
-### 4. Why split
+### 5. Why commit tests first
 
-Without the split, the agent has both files open at once. When a test
+Without the commit, the agent has both files open at once. When a test
 fails, it has two repair paths: change the implementation, or change
-the test. Models choose the locally-cheap path more often than is
-safe, especially for properties that are slightly subtle (e.g.
-character-vs-byte offsets, exclusive-vs-inclusive end indices). The
-split removes one of the repair paths during implementation.
+the test. Models choose the locally-cheap path more often than is safe,
+especially for subtle properties (character-vs-byte offsets,
+exclusive-vs-inclusive end indices). The commit removes one repair path
+during implementation — no later refactor can quietly weaken the test
+suite without the diff being obvious in git history.
 
-The cost is one extra approval gate per task. The benefit is that
-the test file is *committed* before the implementation exists — no
-later refactor can quietly weaken it without the diff being obvious.
+### 6. Closeout
 
-### 5. Closeout
-
-Tracker:
+Tracker update:
 - Tick T3.
 - Decisions made entry:
 
@@ -153,33 +135,47 @@ Tracker:
   > actual text on failure, not just a yes/no, to surface a
   > diagnostic in the inspection CLI.
 
-PR description names the spec deliverable: "Round-trip test: every
-character in every span resolves back to the corresponding source
-text."
+```bash
+git add docs/plans/phase-1-ingest-tracker.md
+git commit -m "$(cat <<'EOF'
+chore(T3): tick T3 complete, add decisions to phase-1-tracker
 
-End session. `/clear`.
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+EOF
+)"
+```
+
+Push and merge:
+
+```bash
+git push -u origin feat/T3-span-verifier
+gh pr create --title "T3: round-trip span verifier" \
+  --body "Covers spec deliverable: 'Round-trip test: every character in every span resolves back to the corresponding source text.' See \`docs/plans/phase-1/T3-roundtrip-verifier.md\`."
+gh pr merge --squash --delete-branch
+git checkout main && git pull --ff-only
+```
+
+Then run `/clear` to reset context, scan the tracker for the next `[ ]` entry, and re-invoke run-task for that T-number.
 
 ## What good looks like
 
 - Two commits at minimum: tests, then implementation. Three if a
-  refactor or property-test fix is needed mid-implementation.
+  fix is needed mid-implementation.
 - The test file's git history shows it was committed before the
   implementation file existed.
-- Hypothesis tests find at least one off-by-one bug during
+- Hypothesis tests find at least one off-by-one case during
   implementation. If they don't, either the property is too weak
   or the implementation is suspicious — investigate.
-- The agent stopped at the phase boundary. If it did not — if it
-  implemented in phase A despite the instruction — strengthen the
-  skill's TDD wording before the next TDD-strict task.
+- No edits to the test file after the first commit.
 
 ## When NOT to use TDD-strict
 
 Tasks where the contract is exploratory or the right output shape is
 unclear. Examples:
-- T11 inspection CLI (output format is an editorial choice).
+- Inspection CLI output format (editorial choice).
 - Prompt-tuning tasks (no fixed correct output).
 - UI work.
 
 For those, write tests after the shape is clear, in the same session.
-The TDD split is a tool for tasks where the right answer is a fact,
-not a judgment.
+The TDD commit-first pattern is a tool for tasks where the right answer
+is a fact, not a judgment.

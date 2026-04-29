@@ -36,7 +36,7 @@ essential meaning. Output only useful information.
 
 The brevity defaults yield to the prompt when any of the following apply:
 
-- Plan-mode plans. Produce every section the prompt requires. Risk notes may be a short paragraph when a tradeoff needs explaining; do not compress reasoning to a fragment.
+- Plan-subagent deliverables. Produce every section the parent skill requires (files, failing test, order, verification, do-not-touch). Risk notes may be a short paragraph when a tradeoff needs explaining; do not compress reasoning to a fragment.
 - "Decisions made" entries in plan trackers. Always include rationale, not just the decision.
 - PR descriptions. State the spec deliverable covered, the change summary, and any out-of-spec discoveries in full.
 - Code review responses. List every issue found. Do not stop at the most important ones.
