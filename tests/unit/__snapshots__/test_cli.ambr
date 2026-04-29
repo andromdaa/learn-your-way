@@ -1,0 +1,29 @@
+# serializer version: 1
+# name: test_render_tree_snapshot
+  '''
+  Concepts (2)
+  ├── [01e6b44ba385] Introduction
+  │     Objective : Understand Introduction
+  │     Spans     : p1-p1  chars 0-30
+  │     Prereqs   : (none)
+  └── [8ba47661dbda] Methods
+        Objective : Understand Methods
+        Spans     : p1-p1  chars 31-57
+        Prereqs   : 01e6b44ba385
+  
+  '''
+# ---
+# name: test_run_inspect_stdout_snapshot
+  '''
+  Concepts (2)
+  ├── [0c9d343e3353] Methods
+  │     Objective : Understand Methods
+  │     Spans     : p1-p1  chars 31-57
+  │     Prereqs   : (none)
+  └── [992bc8c9cdd5] Introduction
+        Objective : Understand Introduction
+        Spans     : p1-p1  chars 0-30
+        Prereqs   : (none)
+  
+  '''
+# ---
