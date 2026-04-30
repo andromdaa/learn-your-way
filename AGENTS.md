@@ -18,8 +18,6 @@ See `docs/00-goals.md` for scope and `specs/` for the phase contract.
   verifier layer; both are out of scope until a later phase.
 - Modes are not independent. All modalities derive from the canonical
   lesson graph, never directly from the raw PDF.
-- No recommender engine before phase 2 ships. Personalization is
-  explicit-profile plus quiz feedback only.
 - Edits to `src/lesson_graph/models.py` require `SCHEMA_CHANGE=1` in
   the agent environment. The schema is enforced as an invariant by
   the PreToolUse hook in `.claude/settings.json`.
@@ -51,7 +49,7 @@ Rationale for each choice lives in `docs/adr/`.
 
 - Lint and format: `ruff` (configured in `pyproject.toml`).
 - Type check: `mypy --strict`.
-- Tests: `pytest` with coverage (90% gate).
+- Tests: `pytest` with coverage (93% gate, `fail_under = 93` in `pyproject.toml`).
 - CI: `.github/workflows/ci.yml` — runs ruff, mypy, pytest, coverage on
   every push and PR.
 
@@ -87,15 +85,39 @@ uvx --with pydantic mypy src/      # mypy needs the pydantic plugin
 - Each PR must reference a spec file in `specs/` and update the
   matching plan in `docs/plans/` if one is in flight.
 - Schema changes require `SCHEMA_CHANGE=1`, an updated test in
-  `tests/test_lesson_graph.py`, and an ADR if the change is
+  `tests/unit/test_lesson_graph.py`, and an ADR if the change is
   semantically significant.
-- Do not add modality generators before phase 3 is opened.
+- Phase 3 generators must persist output via the two-store pattern in
+  ADR-0013: file content is written to content-addressed storage via
+  `DataDir.write_asset(data, suffix=...)` (SHA-256 over bytes); metadata
+  is keyed in the `derived_assets` SQLite table by
+  `(lesson_id, concept_id, kind, profile_id)`. The `personalize_concept`
+  Arq job orchestrates both writes; generators must not call
+  `save_derived_asset` directly.
+- There are two `DerivedAsset` types: `lesson_graph.models.DerivedAsset`
+  (Pydantic, generator-output domain model with `based_on_concepts` and rich
+  `personalization_profile`) and `lyw_core.db.dao.DerivedAsset` (plain
+  dataclass, persistence record with scalar `concept_id` and `file_path`).
+  Generators construct the Pydantic model; the Arq job derives the DAO record
+  from it before persisting. Do not conflate them.
+- Lesson-level generator kinds (`mind_map`, `timeline`) use sentinel constant
+  `LESSON_SCOPED_CONCEPT_ID` (`"__lesson__"`) from `src/lyw_core/db/dao.py`
+  as the `concept_id` value — the `derived_assets` table requires a non-null
+  `concept_id`.
+- Phase 3 generators that produce batches should discard failing items
+  (as `MCQGenerator` does); generators that produce a single result
+  should raise on failure (as `MnemonicGenerator` does). See ADR-0011.
+- `PersonalizationProfile` is a Pydantic `BaseModel`; use the Pydantic
+  constructor, not dict literals (ADR-0009).
+- `AssessmentItem.concept_id` must be populated at generation time; it
+  is not backfill-able via span join (ADR-0010).
+- Serialise `GlowsGrows` with `dataclasses.asdict()`, not `.model_dump()`.
 
 ## Phases
 
-1. Ingest and ground (`specs/phase-1-ingest.md`)
-2. Personalization and assessment (`specs/phase-2-personalization.md`)
-3. Modality generators (`specs/phase-3-modalities.md`)
+1. Ingest and ground (`specs/phase-1-ingest.md`) — complete
+2. Personalization and assessment (`specs/phase-2-personalization.md`) — complete
+3. Modality generators (`specs/phase-3-modalities.md`) — **in flight**
 
 Plans for the in-flight phase live under `docs/plans/`. Specs are
 stable contracts; plans are mutable trackers.

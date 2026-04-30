@@ -3,6 +3,9 @@
 ## Status
 
 Accepted (2026-04-30)
+Amended (2026-04-30): removed stale phase-2 `kind` enumeration; valid values
+are now defined by the `DerivedAsset.kind` Literal in
+`src/lesson_graph/models.py`.
 
 ## Context
 
@@ -23,8 +26,10 @@ Use two complementary stores:
    blobs off the database.
 
 2. **`derived_assets` SQLite table** for queryable metadata:
-   `id`, `lesson_id`, `concept_id`, `kind` (`"relevel"` | `"replace"` |
-   `"mnemonic"`), `profile_id`, `file_path`, `created_at`.
+   `id`, `lesson_id`, `concept_id`, `kind`, `profile_id`, `file_path`,
+   `created_at`. Valid `kind` values are defined by the `DerivedAsset.kind`
+   Literal in `src/lesson_graph/models.py` (and must agree with the DAO
+   dataclass at `src/lyw_core/db/dao.py`).
 
 Generators remain pure (return text only). A thin `save_derived_asset`
 helper in the DAO writes both stores after the generator returns. The

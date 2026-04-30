@@ -96,7 +96,7 @@ The model-level validator runs after all fields are populated and
 therefore does not depend on declaration order.
 
 The negative case is pinned by
-`tests/test_lesson_graph.py::test_source_span_validator_does_not_depend_on_field_order`.
+`tests/unit/test_lesson_graph.py::test_source_span_validator_does_not_depend_on_field_order`.
 
 ## Invariants
 
@@ -135,7 +135,7 @@ Edits to `src/lesson_graph/models.py` are blocked by a PreToolUse hook
 (`.claude/hooks/guard-schema.py`) unless `SCHEMA_CHANGE=1` is set in
 the agent's environment. Schema changes must:
 
-1. Update tests in `tests/test_lesson_graph.py` to lock the new
+1. Update tests in `tests/unit/test_lesson_graph.py` to lock the new
    invariants.
 2. For semantically significant changes, add an ADR under
    `docs/adr/`.
