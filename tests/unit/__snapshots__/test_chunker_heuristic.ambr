@@ -17,6 +17,7 @@
         }),
       ]),
       'summary': 'This is the body.',
+      'temporal_position': None,
       'title': 'Introduction',
     }),
     dict({
@@ -35,6 +36,7 @@
         }),
       ]),
       'summary': 'More content here.',
+      'temporal_position': None,
       'title': 'Methods',
     }),
   ])

@@ -404,6 +404,37 @@ class Database:
         )
         await self._conn.commit()
 
+    async def get_attempts_by_quiz_id(
+        self, quiz_id: str, profile_id: str
+    ) -> list[AttemptRecord]:
+        """Return all attempts by a profile for items belonging to a quiz.
+
+        Uses a JOIN through assessment_items on quiz_id so callers do not
+        need to iterate all profile attempts manually.
+        """
+        async with self._conn.execute(
+            """
+            SELECT a.id, a.profile_id, a.item_id, a.response, a.correct, a.attempted_at
+            FROM attempts a
+            JOIN assessment_items ai ON ai.id = a.item_id
+            WHERE ai.quiz_id = ? AND a.profile_id = ?
+            ORDER BY a.attempted_at ASC
+            """,
+            (quiz_id, profile_id),
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            AttemptRecord(
+                id=row["id"],
+                profile_id=row["profile_id"],
+                item_id=row["item_id"],
+                response=row["response"],
+                correct=bool(row["correct"]),
+                attempted_at=row["attempted_at"],
+            )
+            for row in rows
+        ]
+
     async def get_profile_attempts(self, profile_id: str) -> list[AttemptRecord]:
         """Return all attempts for a profile, ordered by attempted_at ASC."""
         async with self._conn.execute(

@@ -20,7 +20,7 @@ prerequisites.
 - [x] [T0c-r1: Add "mnemonic" to DerivedAsset.kind Pydantic Literal (SCHEMA_CHANGE=1)](phase-3/T0c-r1-carryover-debt.md)
 - [x] [T0c-r2: temporal_position schema change on ConceptNode (ADR-0014)](phase-3/T0c-r2-temporal-position-schema.md)
 - [x] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
-- [ ] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
+- [x] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
 - [ ] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
 - [ ] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
 - [ ] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
@@ -29,6 +29,16 @@ prerequisites.
 - [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T0c-r4 — 2026-04-30**: `AttemptFeedback` gains `glows: str | None` and `grows: str | None`.
+  Handler uses `item.quiz_id` to gate the Glows-Grows path; when set and item is
+  auto-evaluable, fetches sibling items + profile attempts via two new DAO queries and
+  calls `SectionQuizGenerator.generate_glows_grows`. All exceptions are caught and
+  logged; the response degrades to `null` rather than 500. DAO gains
+  `get_attempts_by_quiz_id` (JOIN through `assessment_items`). Integration tests fix:
+  `add_source` + `add_profile` required before `upsert_lesson_graph`; path is
+  `/attempts` not `/v1/attempts` (no prefix in the router). Stale
+  `test_chunker_heuristic` snapshot updated for T0c-r2's `temporal_position` field.
 
 - **T0c-r1 — 2026-04-30**: Added `"mnemonic"` to `DerivedAsset.kind` Literal only
   (no SQLite migration needed; DAO `_VALID_KINDS` already included it). Chose to

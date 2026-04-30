@@ -2,15 +2,23 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Annotated
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from lesson_graph.models import SourceSpan
 from lyw_core.api.app import get_db
 from lyw_core.assessment.gap import GapDetector
+from lyw_core.assessment.mcq import MCQGenerator
+from lyw_core.assessment.quiz import SectionQuizGenerator
+from lyw_core.clients.ollama import OllamaModelClient
 from lyw_core.db.dao import Database
+from lyw_core.settings import Settings
+
+_logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
@@ -31,6 +39,8 @@ class AttemptFeedback(BaseModel):
     rationale: str
     source_spans: list[SourceSpan]
     suggested_next_concept_id: str | None = None
+    glows: str | None = None
+    grows: str | None = None
 
 
 class RecommendationRequest(BaseModel):
@@ -67,7 +77,8 @@ async def record_attempt(
     if item is None:
         raise HTTPException(status_code=404, detail="Assessment item not found")
 
-    if item.correct_answer is None:
+    is_manual_eval = item.correct_answer is None
+    if is_manual_eval:
         correct = False
         rationale = "Manual evaluation required"
     else:
@@ -95,11 +106,45 @@ async def record_attempt(
             if next_node is not None:
                 suggested_next_concept_id = next_node.id
 
+    # Glows-Grows: only for quiz items with a correct_answer (auto-evaluable).
+    glows: str | None = None
+    grows: str | None = None
+    if item.quiz_id is not None and not is_manual_eval:
+        try:
+            settings = Settings()
+            model_client = OllamaModelClient(
+                base_url=settings.ollama_base_url,
+                model=settings.model_name,
+            )
+            mcq_gen = MCQGenerator(model_client=model_client, validators=[], dao=db)
+            quiz_gen = SectionQuizGenerator(
+                mcq_generator=mcq_gen, model_client=model_client, dao=db
+            )
+            sibling_items = await db.get_items_by_quiz_id(item.quiz_id)
+            sibling_attempts = await db.get_attempts_by_quiz_id(
+                item.quiz_id, body.profile_id
+            )
+            feedback = await quiz_gen.generate_glows_grows(
+                sibling_items, sibling_attempts
+            )
+            gg = dataclasses.asdict(feedback)
+            glows = gg["glows"]
+            grows = gg["grows"]
+        except Exception:
+            _logger.warning(
+                "glows_grows_failed",
+                quiz_id=item.quiz_id,
+                item_id=item.id,
+                exc_info=True,
+            )
+
     return AttemptFeedback(
         correct=correct,
         rationale=rationale,
         source_spans=item.source_spans,
         suggested_next_concept_id=suggested_next_concept_id,
+        glows=glows,
+        grows=grows,
     )
 
 
