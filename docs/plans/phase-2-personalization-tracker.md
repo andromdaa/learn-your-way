@@ -17,7 +17,7 @@ prerequisites.
 ## Tasks
 
 - [x] [T0c-r1: PersonalizationProfile + ReplacementRecord schema change (ADR-0009)](phase-2/T0c-r1-personalization-profile-schema.md)
-- [ ] [T0c-r2: AssessmentItem.concept_id schema change (ADR-0010)](phase-2/T0c-r2-assessment-item-concept-id.md)
+- [x] [T0c-r2: AssessmentItem.concept_id schema change (ADR-0010)](phase-2/T0c-r2-assessment-item-concept-id.md)
 - [x] [T0c-r3: AssessmentItem.correct_answer + bloom_level + ConceptNode.prerequisites clarification (ADR-0012)](phase-2/T0c-r3-assessment-item-fields.md)
 - [ ] [T1: LearnerProfile model, profiles SQLite table, profile DAO](phase-2/T1-learner-profile.md)
 - [ ] [T2: POST /profiles endpoint](phase-2/T2-profiles-endpoint.md)
@@ -37,6 +37,7 @@ prerequisites.
 
 - 2026-04-30 T0c-r1: Used Pydantic BaseModel for PersonalizationProfile instead of TypedDict (as mentioned in docs/02-data-model.md). Rationale: TypedDict cannot enforce the non-empty justification invariant on ReplacementRecord; Pydantic field_validator provides construction-time enforcement. See ADR-0009.
 - 2026-04-30 T0c-r3: Retroactively marked complete. AssessmentItem.correct_answer, bloom_level, and ConceptNode.prerequisites priority ordering were shipped in commit c1ad09e before the tracker was opened. ADR-0012 was committed in that session.
+- 2026-04-30 T0c-r2: concept_id stored as a denormalised field on AssessmentItem rather than derived via source_span join. Rationale: gap detector queries it on every submission (O(1) vs join); runtime resolution of concept_id to a ConceptNode is the clarity validator's job (T4), not a model invariant.
 
 ## Open Questions
 
