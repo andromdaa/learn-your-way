@@ -104,7 +104,7 @@ After closeout, scan `docs/plans/phase-<N>-tracker.md` for the next unchecked ta
 
 - Read the `## Tasks` section only — stop scanning at the next `## ` heading to avoid false positives in `## Out-of-Spec Discoveries`.
 - Match the first line satisfying: `^- \[ \] \[(T\d+[a-z]?): ([^\]]+)\]\(([^)]+)\)`
-- If found: run `/clear` to reset context, then re-invoke this skill with that T-number.
+- If found: spawn the next task as a **subagent** using the `Agent` tool (`subagent_type: "general-purpose"`, prompt: `"/run-task <T-number>"`). This gives each task a clean context without requiring a manual `/clear`. Do NOT call `Skill("run-task", ...)` directly — that keeps the context alive.
 - If none: print "Phase <N> complete. <M> tasks shipped this run." and stop.
 
 ## Safety
