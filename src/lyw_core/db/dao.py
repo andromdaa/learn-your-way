@@ -8,7 +8,7 @@ from typing import Any
 
 import aiosqlite
 
-from lesson_graph import ConceptNode, LessonGraph, SourceSpan
+from lesson_graph import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.profiles.models import LearnerProfile
 
 
@@ -220,3 +220,62 @@ class Database:
             )
             for row in rows
         ]
+
+    # ------------------------------------------------------------------
+    # Assessment items
+    # ------------------------------------------------------------------
+
+    async def add_assessment_item(self, item: AssessmentItem) -> None:
+        """Persist a single AssessmentItem; source_spans serialised as JSON."""
+        await self._conn.execute(
+            """
+            INSERT INTO assessment_items
+                (id, concept_id, kind, prompt, rationale,
+                 difficulty, correct_answer, bloom_level, source_spans)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item.id,
+                item.concept_id,
+                item.kind,
+                item.prompt,
+                item.rationale,
+                item.difficulty,
+                item.correct_answer,
+                item.bloom_level,
+                json.dumps([s.model_dump() for s in item.source_spans]),
+            ),
+        )
+        await self._conn.commit()
+
+    async def get_items_by_concept(self, concept_id: str) -> list[AssessmentItem]:
+        """Return every AssessmentItem stored for the given concept (insertion order)."""
+        async with self._conn.execute(
+            """
+            SELECT id, concept_id, kind, prompt, rationale,
+                   difficulty, correct_answer, bloom_level, source_spans
+            FROM assessment_items
+            WHERE concept_id = ?
+            ORDER BY rowid
+            """,
+            (concept_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+
+        items: list[AssessmentItem] = []
+        for row in rows:
+            spans = [SourceSpan(**d) for d in json.loads(row["source_spans"])]
+            items.append(
+                AssessmentItem(
+                    id=row["id"],
+                    concept_id=row["concept_id"],
+                    kind=row["kind"],
+                    prompt=row["prompt"],
+                    rationale=row["rationale"],
+                    difficulty=row["difficulty"],
+                    correct_answer=row["correct_answer"],
+                    bloom_level=row["bloom_level"],
+                    source_spans=spans,
+                )
+            )
+        return items

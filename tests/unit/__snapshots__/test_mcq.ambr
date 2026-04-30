@@ -1,0 +1,24 @@
+# serializer version: 1
+# name: test_mcq_returns_only_passing_items
+  list([
+    dict({
+      'bloom_level': 'understand',
+      'concept_id': 'c1',
+      'correct_answer': 'Oxygen',
+      'difficulty': 'easy',
+      'id': '<uuid>',
+      'kind': 'mcq',
+      'prompt': 'Q1: What is released?',
+      'rationale': 'Photosynthesis releases oxygen as a byproduct.',
+      'source_spans': list([
+        dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+      ]),
+    }),
+  ])
+# ---
