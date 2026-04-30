@@ -10,7 +10,6 @@ from lyw_core.personalization.relevel import ReLeveler
 from lyw_core.profiles.models import LearnerProfile
 from lyw_core.validators.base import ValidationError, ValidationResult
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -18,7 +17,11 @@ from lyw_core.validators.base import ValidationError, ValidationResult
 
 def _span(char_start: int = 0, char_end: int = 500) -> SourceSpan:
     return SourceSpan(
-        doc_id="doc-1", page_start=1, page_end=2, char_start=char_start, char_end=char_end
+        doc_id="doc-1",
+        page_start=1,
+        page_end=2,
+        char_start=char_start,
+        char_end=char_end,
     )
 
 
@@ -34,7 +37,10 @@ def _concept() -> ConceptNode:
 
 def _profile(grade_level: str = "6") -> LearnerProfile:
     return LearnerProfile(
-        id="p1", grade_level=grade_level, interests=["nature"], goals=["understand biology"]
+        id="p1",
+        grade_level=grade_level,
+        interests=["nature"],
+        goals=["understand biology"],
     )
 
 

@@ -1,0 +1,22 @@
+# serializer version: 1
+# name: test_relevel_profile_snapshot
+  dict({
+    'grade_level': '6',
+    'interests': list([
+      'nature',
+    ]),
+    'replacements': list([
+      dict({
+        'justification': 're-leveled to grade 6',
+        'original_span': dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+        'replacement_text': 'Simple text about plants.',
+      }),
+    ]),
+  })
+# ---
