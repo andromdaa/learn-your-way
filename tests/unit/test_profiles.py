@@ -47,7 +47,9 @@ def test_learner_profile_rejects_whitespace_grade_level() -> None:
 
 def test_learner_profile_interests_and_goals_round_trip() -> None:
     p = LearnerProfile.model_validate_json(
-        _profile(interests=["coding", "chess"], goals=["improve", "compete"]).model_dump_json()
+        _profile(
+            interests=["coding", "chess"], goals=["improve", "compete"]
+        ).model_dump_json()
     )
     assert p.interests == ["coding", "chess"]
     assert p.goals == ["improve", "compete"]
