@@ -126,6 +126,7 @@ class AssessmentItem(BaseModel):
         Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
         | None
     ) = None
+    quiz_id: str | None = None
 
     @field_validator("concept_id")
     @classmethod

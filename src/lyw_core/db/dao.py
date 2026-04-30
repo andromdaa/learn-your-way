@@ -258,8 +258,8 @@ class Database:
             """
             INSERT INTO assessment_items
                 (id, concept_id, kind, prompt, rationale,
-                 difficulty, correct_answer, bloom_level, source_spans)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 difficulty, correct_answer, bloom_level, source_spans, quiz_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 item.id,
@@ -271,6 +271,7 @@ class Database:
                 item.correct_answer,
                 item.bloom_level,
                 json.dumps([s.model_dump() for s in item.source_spans]),
+                item.quiz_id,
             ),
         )
         await self._conn.commit()
@@ -291,7 +292,7 @@ class Database:
         async with self._conn.execute(
             """
             SELECT id, concept_id, kind, prompt, rationale,
-                   difficulty, correct_answer, bloom_level, source_spans
+                   difficulty, correct_answer, bloom_level, source_spans, quiz_id
             FROM assessment_items
             WHERE concept_id = ?
             ORDER BY rowid
@@ -314,6 +315,7 @@ class Database:
                     correct_answer=row["correct_answer"],
                     bloom_level=row["bloom_level"],
                     source_spans=spans,
+                    quiz_id=row["quiz_id"],
                 )
             )
         return items
@@ -323,7 +325,7 @@ class Database:
         async with self._conn.execute(
             """
             SELECT id, concept_id, kind, prompt, rationale,
-                   difficulty, correct_answer, bloom_level, source_spans
+                   difficulty, correct_answer, bloom_level, source_spans, quiz_id
             FROM assessment_items
             WHERE id = ?
             """,
@@ -343,7 +345,41 @@ class Database:
             correct_answer=row["correct_answer"],
             bloom_level=row["bloom_level"],
             source_spans=spans,
+            quiz_id=row["quiz_id"],
         )
+
+    async def get_items_by_quiz_id(self, quiz_id: str) -> list[AssessmentItem]:
+        """Return every AssessmentItem stored with the given quiz_id (insertion order)."""
+        async with self._conn.execute(
+            """
+            SELECT id, concept_id, kind, prompt, rationale,
+                   difficulty, correct_answer, bloom_level, source_spans, quiz_id
+            FROM assessment_items
+            WHERE quiz_id = ?
+            ORDER BY rowid
+            """,
+            (quiz_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+
+        items: list[AssessmentItem] = []
+        for row in rows:
+            spans = [SourceSpan(**d) for d in json.loads(row["source_spans"])]
+            items.append(
+                AssessmentItem(
+                    id=row["id"],
+                    concept_id=row["concept_id"],
+                    kind=row["kind"],
+                    prompt=row["prompt"],
+                    rationale=row["rationale"],
+                    difficulty=row["difficulty"],
+                    correct_answer=row["correct_answer"],
+                    bloom_level=row["bloom_level"],
+                    source_spans=spans,
+                    quiz_id=row["quiz_id"],
+                )
+            )
+        return items
 
     # ------------------------------------------------------------------
     # Attempts

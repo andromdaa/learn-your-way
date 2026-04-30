@@ -249,6 +249,19 @@ def test_assessment_item_rejects_unknown_bloom_level() -> None:
         _item(bloom_level="synthesis")
 
 
+def test_assessment_item_quiz_id_defaults_to_none() -> None:
+    item = _item()
+    assert item.quiz_id is None
+
+
+def test_assessment_item_quiz_id_accepted() -> None:
+    item = _item(quiz_id="q-1")
+    assert item.quiz_id == "q-1"
+    rebuilt = AssessmentItem.model_validate_json(item.model_dump_json())
+    assert rebuilt == item
+    assert rebuilt.quiz_id == "q-1"
+
+
 # DerivedAsset --------------------------------------------------------------
 
 

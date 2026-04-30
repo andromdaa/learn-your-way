@@ -19,7 +19,7 @@ prerequisites.
 
 - [x] [T0c-r1: Add "mnemonic" to DerivedAsset.kind Pydantic Literal (SCHEMA_CHANGE=1)](phase-3/T0c-r1-carryover-debt.md)
 - [x] [T0c-r2: temporal_position schema change on ConceptNode (ADR-0014)](phase-3/T0c-r2-temporal-position-schema.md)
-- [ ] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
+- [x] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
 - [ ] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
 - [ ] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
 - [ ] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
@@ -60,6 +60,15 @@ prerequisites.
   is the bridge. No refactor; layering documented in AGENTS.md and spec.
 - **C3 — ADR-0013 kind enumeration removed**: stale `"relevel"|"replace"|"mnemonic"`
   enumeration replaced with a reference to `DerivedAsset.kind` Literal.
+- **T0c-r3 — 2026-04-30**: Added `quiz_id: str | None = None` to `AssessmentItem` as a
+  nullable denormalised field rather than a join table. Chose denormalisation because
+  quiz membership is write-once and immutable; the simpler `WHERE quiz_id = ?` scan
+  outweighs the normalisation benefit for this phase. Added `quiz_id TEXT` columns to
+  both `assessment_items` and `attempts` tables in schema.sql. Added `get_items_by_quiz_id`
+  DAO method for T0c-r4. Updated two snapshots (`test_mcq.ambr`, `test_quiz.ambr`) to
+  include the new `quiz_id: null` field in serialised AssessmentItem output. ADR-0015
+  documents the design.
+
 - **T0c-r2 — 2026-04-30**: Added `temporal_position: int | None = None` to `ConceptNode`.
   Chose `int` over `float` (no insertion use-case in phase 3) and over `str` (avoids
   a separate sort key). Default `None` keeps all existing serialised lesson graphs valid
