@@ -266,7 +266,9 @@ def test_post_attempts_returns_200_correct(client: TestClient) -> None:
     mock_db = AsyncMock()
     mock_db.get_item_by_id.return_value = item
     mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_id_by_concept_id.return_value = "lesson_doc-1"
     mock_db.get_lesson_graph.return_value = _graph()
+    mock_db.get_profile_attempts.return_value = []
 
     _app = create_app(lifespan=_null_lifespan)
     _app.dependency_overrides[get_db] = lambda: mock_db
@@ -291,7 +293,9 @@ def test_post_attempts_returns_200_incorrect(client: TestClient) -> None:
     mock_db = AsyncMock()
     mock_db.get_item_by_id.return_value = item
     mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_id_by_concept_id.return_value = "lesson_doc-1"
     mock_db.get_lesson_graph.return_value = _graph()
+    mock_db.get_profile_attempts.return_value = []
 
     _app = create_app(lifespan=_null_lifespan)
     _app.dependency_overrides[get_db] = lambda: mock_db
@@ -332,7 +336,9 @@ def test_post_attempts_null_correct_answer_returns_manual_eval(
     mock_db = AsyncMock()
     mock_db.get_item_by_id.return_value = item
     mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_id_by_concept_id.return_value = "lesson_doc-1"
     mock_db.get_lesson_graph.return_value = _graph()
+    mock_db.get_profile_attempts.return_value = []
 
     _app = create_app(lifespan=_null_lifespan)
     _app.dependency_overrides[get_db] = lambda: mock_db
@@ -348,6 +354,104 @@ def test_post_attempts_null_correct_answer_returns_manual_eval(
     body = response.json()
     assert body["correct"] is False
     assert body["rationale"] == "Manual evaluation required"
+
+
+def test_post_attempts_suggested_next_populated_when_gap_exists() -> None:
+    """suggested_next_concept_id is the prereq concept when a gap is detected."""
+    from unittest.mock import patch
+
+    from lyw_core.assessment.gap import GapDetector
+
+    prereq_node = ConceptNode(
+        id="c2",
+        title="Prerequisite Concept",
+        summary="Prereq summary.",
+        learning_objective="Learn the prereq.",
+        source_spans=[_span()],
+        prerequisites=[],
+    )
+    graph = LessonGraph(
+        id="lesson_doc-1",
+        source_id="doc-1",
+        concepts=[
+            ConceptNode(
+                id="c1",
+                title="Concept One",
+                summary="Summary.",
+                learning_objective="Understand it.",
+                source_spans=[_span()],
+                prerequisites=["c2"],
+            ),
+            prereq_node,
+        ],
+    )
+
+    item = _mcq_item("Paris")
+    mock_db = AsyncMock()
+    mock_db.get_item_by_id.return_value = item
+    mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_id_by_concept_id.return_value = "lesson_doc-1"
+    mock_db.get_lesson_graph.return_value = graph
+
+    mock_detector = AsyncMock(spec=GapDetector)
+    mock_detector.next_concept.return_value = prereq_node
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with (
+        patch(
+            "lyw_core.api.routes.attempts.GapDetector",
+            return_value=mock_detector,
+        ),
+        TestClient(_app) as c,
+    ):
+        response = c.post(
+            "/attempts",
+            json={"profile_id": "p1", "item_id": "item-1", "response": "Lyon"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["suggested_next_concept_id"] == "c2"
+
+
+def test_post_attempts_suggested_next_none_when_no_gap() -> None:
+    """suggested_next_concept_id is None when GapDetector returns None."""
+    from unittest.mock import patch
+
+    from lyw_core.assessment.gap import GapDetector
+
+    item = _mcq_item("Paris")
+    mock_db = AsyncMock()
+    mock_db.get_item_by_id.return_value = item
+    mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_id_by_concept_id.return_value = "lesson_doc-1"
+    mock_db.get_lesson_graph.return_value = _graph()
+
+    mock_detector = AsyncMock(spec=GapDetector)
+    mock_detector.next_concept.return_value = None
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with (
+        patch(
+            "lyw_core.api.routes.attempts.GapDetector",
+            return_value=mock_detector,
+        ),
+        TestClient(_app) as c,
+    ):
+        response = c.post(
+            "/attempts",
+            json={"profile_id": "p1", "item_id": "item-1", "response": "Paris"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["suggested_next_concept_id"] is None
 
 
 # ---------------------------------------------------------------------------

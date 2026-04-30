@@ -262,6 +262,17 @@ class Database:
         )
         await self._conn.commit()
 
+    async def get_lesson_id_by_concept_id(self, concept_id: str) -> str | None:
+        """Return the lesson_id that owns the given concept, or None if not found."""
+        async with self._conn.execute(
+            "SELECT lesson_id FROM concepts WHERE id = ?",
+            (concept_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return str(row["lesson_id"])
+
     async def get_items_by_concept(self, concept_id: str) -> list[AssessmentItem]:
         """Return every AssessmentItem stored for the given concept (insertion order)."""
         async with self._conn.execute(
