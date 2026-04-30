@@ -26,6 +26,19 @@ class AttemptRecord:
     attempted_at: str
 
 
+@dataclass
+class DerivedAsset:
+    """Metadata for a generator output persisted to the content-addressed store."""
+
+    id: str
+    lesson_id: str
+    concept_id: str
+    kind: str  # "relevel" | "replace" | "mnemonic"
+    profile_id: str
+    file_path: str
+    created_at: str
+
+
 class Database:
     """Thin async wrapper around aiosqlite with schema bootstrapping."""
 
@@ -378,3 +391,57 @@ class Database:
             )
             for row in rows
         ]
+
+    # ------------------------------------------------------------------
+    # Derived assets
+    # ------------------------------------------------------------------
+
+    async def save_derived_asset(self, asset: DerivedAsset) -> None:
+        """Persist a DerivedAsset metadata row (INSERT OR IGNORE)."""
+        await self._conn.execute(
+            """
+            INSERT OR IGNORE INTO derived_assets
+                (id, lesson_id, concept_id, kind, profile_id, file_path)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                asset.id,
+                asset.lesson_id,
+                asset.concept_id,
+                asset.kind,
+                asset.profile_id,
+                asset.file_path,
+            ),
+        )
+        await self._conn.commit()
+
+    async def get_derived_asset(
+        self,
+        lesson_id: str,
+        concept_id: str,
+        kind: str,
+        profile_id: str,
+    ) -> DerivedAsset | None:
+        """Return the most-recently-created DerivedAsset for the given key, or None."""
+        async with self._conn.execute(
+            """
+            SELECT id, lesson_id, concept_id, kind, profile_id, file_path, created_at
+            FROM derived_assets
+            WHERE lesson_id = ? AND concept_id = ? AND kind = ? AND profile_id = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (lesson_id, concept_id, kind, profile_id),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return DerivedAsset(
+            id=row["id"],
+            lesson_id=row["lesson_id"],
+            concept_id=row["concept_id"],
+            kind=row["kind"],
+            profile_id=row["profile_id"],
+            file_path=row["file_path"],
+            created_at=row["created_at"],
+        )

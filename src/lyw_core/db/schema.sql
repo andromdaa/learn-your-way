@@ -73,3 +73,16 @@ CREATE TABLE IF NOT EXISTS attempts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_attempts_profile_id ON attempts(profile_id);
+
+CREATE TABLE IF NOT EXISTS derived_assets (
+    id          TEXT PRIMARY KEY,
+    lesson_id   TEXT NOT NULL,
+    concept_id  TEXT NOT NULL,
+    kind        TEXT NOT NULL,
+    profile_id  TEXT NOT NULL,
+    file_path   TEXT NOT NULL,
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_derived_assets_lookup
+    ON derived_assets(lesson_id, concept_id, kind, profile_id);
