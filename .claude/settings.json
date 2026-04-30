@@ -3,6 +3,9 @@
   "permissions": {
     "defaultMode": "bypassPermissions"
   },
+  "env": {
+    "SCHEMA_CHANGE": "1"
+  },
   "outputStyle": "direct-compact",
   "hooks": {
     "PreToolUse": [

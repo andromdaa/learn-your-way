@@ -59,6 +59,8 @@ class ConceptNode(BaseModel):
     # Ordered by priority; index 0 = highest-priority prerequisite (ADR-0012)
     prerequisites: list[str] = Field(default_factory=list)
     provenance: Literal["heuristic", "llm_refined"] = "heuristic"  # ADR-0008
+    # Integer ordering rank for chronologically structured content; None = unordered (ADR-0014)
+    temporal_position: int | None = None
 
 
 class AssessmentItem(BaseModel):
@@ -119,6 +121,13 @@ These hold regardless of modality, generator, or pipeline phase:
   the section-quality gate.
 - `ConceptNode.prerequisites` is ordered by priority. The gap detector
   treats index 0 as the highest-priority prerequisite (ADR-0012).
+- `ConceptNode.temporal_position` is an optional integer ordering rank for
+  chronologically structured content. `None` means the concept has no temporal
+  position (unordered or not applicable). Negative values are valid (BC dates,
+  relative pre-epoch ordering). The timeline generator uses this field to
+  identify and sort chronological concepts; if all concepts in a graph have
+  `temporal_position = None` the timeline generator skips that graph.
+  See ADR-0014.
 - Every `DerivedAsset` references at least one concept in
   `based_on_concepts`.
 - `DerivedAsset.personalization_profile` is a typed `PersonalizationProfile`
