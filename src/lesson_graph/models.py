@@ -95,6 +95,15 @@ class ConceptNode(BaseModel):
         description="Ordered by priority; the gap detector treats index 0 as the highest-priority prerequisite.",
     )
     provenance: Literal["heuristic", "llm_refined"] = "heuristic"
+    temporal_position: int | None = Field(
+        default=None,
+        description=(
+            "Integer ordering rank for chronologically structured content. "
+            "None means the concept has no temporal position (unordered or not applicable). "
+            "Negative values are valid for BC dates or relative pre-epoch ordering. "
+            "Used by the timeline generator to identify and sort chronological concepts."
+        ),
+    )
 
 
 class AssessmentItem(BaseModel):

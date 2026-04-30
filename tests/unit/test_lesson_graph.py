@@ -144,6 +144,45 @@ def test_concept_node_provenance_rejects_invalid() -> None:
         )
 
 
+def test_concept_node_temporal_position_defaults_to_none() -> None:
+    node = ConceptNode(
+        id="c1",
+        title="t",
+        summary="s",
+        learning_objective="lo",
+        source_spans=[_span()],
+    )
+    assert node.temporal_position is None
+
+
+def test_concept_node_temporal_position_round_trips() -> None:
+    node = ConceptNode(
+        id="c1",
+        title="t",
+        summary="s",
+        learning_objective="lo",
+        source_spans=[_span()],
+        temporal_position=3,
+    )
+    assert node.temporal_position == 3
+    rebuilt = ConceptNode.model_validate_json(node.model_dump_json())
+    assert rebuilt == node
+    assert rebuilt.temporal_position == 3
+
+
+def test_concept_node_temporal_position_absent_when_none() -> None:
+    """A node using the default (None) must not serialise temporal_position as a present key."""
+    node = ConceptNode(
+        id="c1",
+        title="t",
+        summary="s",
+        learning_objective="lo",
+        source_spans=[_span()],
+    )
+    data = node.model_dump(exclude_none=True)
+    assert "temporal_position" not in data
+
+
 # AssessmentItem ------------------------------------------------------------
 
 

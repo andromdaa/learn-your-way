@@ -18,7 +18,7 @@ prerequisites.
 ## Tasks
 
 - [x] [T0c-r1: Add "mnemonic" to DerivedAsset.kind Pydantic Literal (SCHEMA_CHANGE=1)](phase-3/T0c-r1-carryover-debt.md)
-- [ ] [T0c-r2: temporal_position schema change on ConceptNode (ADR-0014)](phase-3/T0c-r2-temporal-position-schema.md)
+- [x] [T0c-r2: temporal_position schema change on ConceptNode (ADR-0014)](phase-3/T0c-r2-temporal-position-schema.md)
 - [ ] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
 - [ ] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
 - [ ] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
@@ -60,6 +60,13 @@ prerequisites.
   is the bridge. No refactor; layering documented in AGENTS.md and spec.
 - **C3 — ADR-0013 kind enumeration removed**: stale `"relevel"|"replace"|"mnemonic"`
   enumeration replaced with a reference to `DerivedAsset.kind` Literal.
+- **T0c-r2 — 2026-04-30**: Added `temporal_position: int | None = None` to `ConceptNode`.
+  Chose `int` over `float` (no insertion use-case in phase 3) and over `str` (avoids
+  a separate sort key). Default `None` keeps all existing serialised lesson graphs valid
+  with no migration. No SQLite column added: the DAO does not need to query this field in
+  phase 3; the timeline generator reads the in-memory graph. Negative values are valid to
+  support BC dates and relative pre-epoch ordering. ADR-0014 documents alternatives.
+
 - **Q5 — Glows-Grows in AttemptFeedback**: promoted from accepted technical
   debt to phase-3 deliverable. The spec carry-over note authorises this:
   "must be resolved if phase 3 adds any endpoint that surfaces Glows/Grows

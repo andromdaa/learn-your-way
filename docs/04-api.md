@@ -233,6 +233,16 @@ components:
           type: string
           enum: [heuristic, llm_refined]
           default: heuristic
+        temporal_position:
+          type: integer
+          nullable: true
+          default: null
+          description: >
+            Integer ordering rank for chronologically structured content.
+            Null means the concept has no temporal position (unordered or
+            not applicable). Used by the timeline generator; if all
+            concepts in a lesson have null temporal_position the timeline
+            generator skips that lesson. Negative values are valid.
 
     LessonGraph:
       type: object
