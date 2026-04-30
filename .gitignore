@@ -19,3 +19,5 @@ build/
 dist/
 docs/artifacts/
 .claude/worktrees
+logs/
+*.log

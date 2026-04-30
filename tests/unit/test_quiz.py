@@ -12,6 +12,7 @@ from syrupy.assertion import SnapshotAssertion
 from lesson_graph.models import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.assessment.mcq import MCQGenerator
 from lyw_core.assessment.quiz import GlowsGrows, SectionQuizGenerator
+from lyw_core.db.dao import AttemptRecord
 
 
 def _span() -> SourceSpan:
@@ -142,8 +143,15 @@ async def test_section_quiz_generates_glows_grows(
     snapshot: SnapshotAssertion,
 ) -> None:
     items = [_assessment_item("i1", "c1", "Q1")]
-    attempts: list[dict[str, Any]] = [
-        {"item_id": "i1", "selected": "Option A", "correct": True}
+    attempts = [
+        AttemptRecord(
+            id="a1",
+            profile_id="p1",
+            item_id="i1",
+            response="Option A",
+            correct=True,
+            attempted_at="2026-04-30T00:00:00Z",
+        )
     ]
 
     model_client = AsyncMock()

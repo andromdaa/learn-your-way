@@ -35,7 +35,7 @@ _T_contra = TypeVar("_T_contra", contravariant=True)
 
 @runtime_checkable
 class Validator(Protocol[_T_contra]):
-    """Single-method protocol every phase-2 validator must satisfy."""
+    """Single-method protocol every validator must satisfy."""
 
     def validate(self, payload: _T_contra) -> ValidationResult: ...
 

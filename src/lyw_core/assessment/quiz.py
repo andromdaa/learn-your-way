@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
 
 import structlog
 
@@ -19,6 +18,7 @@ from lesson_graph.models import AssessmentItem, ConceptNode, LessonGraph
 from lyw_core.assessment.mcq import MCQGenerator
 from lyw_core.assessment.prompts.quiz import build_glows_grows_messages
 from lyw_core.db import Database
+from lyw_core.db.dao import AttemptRecord
 
 _logger = structlog.get_logger(__name__)
 
@@ -67,8 +67,7 @@ class SectionQuizGenerator:
     async def generate_glows_grows(
         self,
         items: list[AssessmentItem],
-        # TODO(T12): tighten to list[AttemptRecord]
-        attempts: list[dict[str, Any]],
+        attempts: list[AttemptRecord],
     ) -> GlowsGrows:
         """Produce Glows/Grows feedback from quiz items and attempt results."""
         messages = build_glows_grows_messages(items, attempts)

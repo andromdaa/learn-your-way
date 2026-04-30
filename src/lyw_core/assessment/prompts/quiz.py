@@ -7,11 +7,12 @@ claims about subject matter. See docs/plans/phase-2/T9-section-quiz.md.
 
 from __future__ import annotations
 
+import dataclasses
 import json
-from typing import Any
 
 from lesson_graph.interfaces import ChatMessage
 from lesson_graph.models import AssessmentItem
+from lyw_core.db.dao import AttemptRecord
 
 _SYSTEM_PROMPT = (
     "You are a supportive tutor delivering feedback on a learner's quiz attempt. "
@@ -27,18 +28,18 @@ _SYSTEM_PROMPT = (
 
 def build_glows_grows_messages(
     items: list[AssessmentItem],
-    attempts: list[dict[str, Any]],
+    attempts: list[AttemptRecord],
 ) -> list[ChatMessage]:
     """Build chat messages asking the model for Glows/Grows feedback."""
     pairs: list[str] = []
     for i, item in enumerate(items):
-        attempt = attempts[i] if i < len(attempts) else {}
+        attempt_dict = dataclasses.asdict(attempts[i]) if i < len(attempts) else {}
         pairs.append(
             f"Question: {item.prompt}\n"
             f"Concept: {item.concept_id}\n"
             f"Correct answer: {item.correct_answer}\n"
             f"Bloom level: {item.bloom_level}\n"
-            f"Attempt: {json.dumps(attempt)}"
+            f"Attempt: {json.dumps(attempt_dict)}"
         )
 
     if pairs:
