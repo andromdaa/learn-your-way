@@ -30,7 +30,7 @@ prerequisites.
 - [x] [T9: Section quiz generator + Glows/Grows feedback (snapshot tests)](phase-2/T9-section-quiz.md)
 - [x] [T10: Coverage, emphasis, active learning section-quality validators](phase-2/T10-section-quality-validators.md)
 - [x] [T11: Mnemonic generator (snapshot tests)](phase-2/T11-mnemonic-generator.md)
-- [ ] [T12: Attempts SQLite table, attempts DAO, gap detector (TDD-strict)](phase-2/T12-gap-detector.md)
+- [x] [T12: Attempts SQLite table, attempts DAO, gap detector (TDD-strict)](phase-2/T12-gap-detector.md)
 - [ ] [T13: POST /attempts + POST /recommendations/next endpoints](phase-2/T13-assessment-api.md)
 
 ## Decisions Made
@@ -49,6 +49,7 @@ prerequisites.
 - 2026-04-30 T9: GlowsGrows defined as a frozen dataclass in quiz.py (not Pydantic) to allow dataclasses.asdict() in snapshot tests and keep it lightweight. attempts typed as list[dict[str, Any]] with TODO(T12) comment — AttemptRecord is not yet defined. SectionQuizGenerator.generate() does NOT call dao.add_assessment_item; persistence happens inside MCQGenerator.generate() to avoid duplicate-PK inserts.
 - 2026-04-30 T8: MCQGenerator takes validators as Sequence[Validator[ItemValidationPayload]] and iterates them manually (not run_validators) so items that fail are discarded rather than raising ValidationError. assessment_items.source_spans stored as JSON array (same serialisation pattern as existing source_spans table). ORDER BY rowid used for insertion-order retrieval without a created_at column.
 - 2026-04-30 T7: original_span is always concept.source_spans[0] for all replacements. Rationale: the model operates on text, not character offsets, so we cannot derive a more precise span from model output; using the first source span is the correct conservative anchor that keeps all replacements traceable to the source document. Faithfulness failures are discarded with structlog warning rather than raised so a partial model response does not abort the whole personalization run.
+- 2026-04-30 T12: AttemptRecord is a plain dataclass (not Pydantic) to match the lightweight pattern of other DAO return types. GapDetector.next_concept takes dao as a parameter (not injected in __init__) so callers can reuse one detector across multiple DAO instances. Gap algorithm uses most-recent incorrect attempt (last in insertion order) to surface the freshest failure signal; prerequisite walk is index-order per ADR-0012.
 
 ## Open Questions
 
