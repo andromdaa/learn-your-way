@@ -21,7 +21,7 @@ prerequisites.
 - [x] [T0c-r2: temporal_position schema change on ConceptNode (ADR-0014)](phase-3/T0c-r2-temporal-position-schema.md)
 - [x] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
 - [x] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
-- [ ] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
+- [x] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
 - [ ] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
 - [ ] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
 - [ ] [T4: Timeline Arq integration (extend personalize_concept + generate endpoint)](phase-3/T4-timeline-arq.md)
@@ -29,6 +29,8 @@ prerequisites.
 - [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T1 — 2026-04-30**: `MindMapGenerator` is pure graph-to-Mermaid with no model call; BFS from focal concept (most prerequisites, first-wins on ties) with visited-set cycle guard; node IDs sanitized via regex `[^A-Za-z0-9] → _`. `MindMapValidator` uses textual heuristics (`["` count for node count, `[""]` for empty labels, first-token check for preamble) — no Mermaid parser. Chose `list[str]` BFS order over `set` to keep snapshot deterministic. `profile` parameter is accepted but unused (API parity with other modality generators; T2 may use it). `noqa: ARG002` omitted after confirming ARG002 is not enabled in this project's ruff config.
 
 - **T0c-r4 — 2026-04-30**: `AttemptFeedback` gains `glows: str | None` and `grows: str | None`.
   Handler uses `item.quiz_id` to gate the Glows-Grows path; when set and item is
