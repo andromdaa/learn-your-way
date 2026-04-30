@@ -26,7 +26,7 @@ prerequisites.
 - [x] [T5: Re-leveling generator (immersive text, snapshot tests)](phase-2/T5-relevel-generator.md)
 - [x] [T6: Adaptability validator (readability scoring)](phase-2/T6-adaptability-validator.md)
 - [x] [T7: Example replacement generator (snapshot tests)](phase-2/T7-example-replacement.md)
-- [ ] [T8: Embedded MCQ generator + assessment_items persistence](phase-2/T8-mcq-generator.md)
+- [x] [T8: Embedded MCQ generator + assessment_items persistence](phase-2/T8-mcq-generator.md)
 - [ ] [T9: Section quiz generator + Glows/Grows feedback (snapshot tests)](phase-2/T9-section-quiz.md)
 - [ ] [T10: Coverage, emphasis, active learning section-quality validators](phase-2/T10-section-quality-validators.md)
 - [ ] [T11: Mnemonic generator (snapshot tests)](phase-2/T11-mnemonic-generator.md)
@@ -44,6 +44,7 @@ prerequisites.
 - 2026-04-30 T4: ItemValidationPayload defined in faithfulness.py (imported by clarity.py). Rationale: no additional types.py file needed; clarity is a consumer of faithfulness's payload definition, keeping the module count within the task's stated file list. span_is_contained uses both page-overlap and character-containment checks as specified in the risk notes.
 - 2026-04-30 T5: Faithfulness gating is performed by constructing a synthetic AssessmentItem (kind=short_answer, source_spans=[original_span]) and running SourceFaithfulnessValidator on it. Rationale: reuses the T4 validator without adding a new validator type; the check verifies the replacement span is valid within the lesson graph. ReLeveler.relevel() is async to match ModelClient.complete().
 - 2026-04-30 T6: Pass condition is strictly closer (rel_dist < orig_dist) OR already at target (orig_dist == 0). Rationale: equal-distance counts as failure because the prompt asked to re-level but produced the same relative distance — that signals the model didn't improve the text. textstat.flesch_kincaid_grade is called twice (original then releveled) to allow deterministic mocking via side_effect in tests.
+- 2026-04-30 T8: MCQGenerator takes validators as Sequence[Validator[ItemValidationPayload]] and iterates them manually (not run_validators) so items that fail are discarded rather than raising ValidationError. assessment_items.source_spans stored as JSON array (same serialisation pattern as existing source_spans table). ORDER BY rowid used for insertion-order retrieval without a created_at column.
 - 2026-04-30 T7: original_span is always concept.source_spans[0] for all replacements. Rationale: the model operates on text, not character offsets, so we cannot derive a more precise span from model output; using the first source span is the correct conservative anchor that keeps all replacements traceable to the source document. Faithfulness failures are discarded with structlog warning rather than raised so a partial model response does not abort the whole personalization run.
 
 ## Open Questions
