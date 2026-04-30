@@ -1,7 +1,5 @@
 """Unit tests for SourceFaithfulnessValidator and ClarityValidator."""
 
-import pytest
-
 from lesson_graph.models import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.validators.clarity import ClarityValidator
 from lyw_core.validators.faithfulness import (
@@ -9,7 +7,6 @@ from lyw_core.validators.faithfulness import (
     SourceFaithfulnessValidator,
     span_is_contained,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -141,7 +138,9 @@ def test_faithfulness_passes_when_span_within_any_concept_span() -> None:
         spans=[_span(char_start=0, char_end=500), _span(char_start=500, char_end=800)]
     )
     item = _item(spans=[item_span])
-    result = SourceFaithfulnessValidator().validate(_payload(item=item, graph=_graph([concept])))
+    result = SourceFaithfulnessValidator().validate(
+        _payload(item=item, graph=_graph([concept]))
+    )
     assert result.passed is True
 
 
@@ -175,9 +174,7 @@ def test_clarity_fails_for_unknown_concept_id() -> None:
 def test_clarity_fails_for_empty_learning_objective() -> None:
     concept = _concept(learning_objective="   ")
     item = _item(concept_id=concept.id)
-    result = ClarityValidator().validate(
-        _payload(item=item, graph=_graph([concept]))
-    )
+    result = ClarityValidator().validate(_payload(item=item, graph=_graph([concept])))
     assert result.passed is False
     assert "learning_objective" in (result.reason or "")
 
