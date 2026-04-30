@@ -158,7 +158,7 @@ def _item(**kwargs: object) -> AssessmentItem:
         "concept_id": "c1",
     }
     defaults.update(kwargs)
-    return AssessmentItem(**defaults)  # type: ignore[arg-type]
+    return AssessmentItem(**defaults)
 
 
 def test_assessment_item_valid() -> None:

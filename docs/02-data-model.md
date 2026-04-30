@@ -68,6 +68,7 @@ class AssessmentItem(BaseModel):
     rationale: str
     source_spans: list[SourceSpan] = Field(min_length=1)
     difficulty: Literal["easy", "medium", "hard"]
+    concept_id: str  # non-empty; references ConceptNode.id (ADR-0010)
     correct_answer: str | None = None  # MCQ only; None for other kinds
     bloom_level: (
         Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
@@ -105,9 +106,10 @@ These hold regardless of modality, generator, or pipeline phase:
 - Every `SourceSpan` resolves to valid character offsets in its
   referenced document, and `page_end >= page_start`,
   `char_end >= char_start`.
-- Every `AssessmentItem` references at least one `ConceptNode` via
-  `concept_id` (added in phase 2) and at least one `SourceSpan`. The
-  cited spans must be a subset of the parent concept's span range.
+- Every `AssessmentItem` carries a non-empty `concept_id` referencing a
+  `ConceptNode.id` in the same lesson graph (ADR-0010), and at least one
+  `SourceSpan`. The cited spans must be a subset of the parent concept's
+  span range.
 - `AssessmentItem.correct_answer` is MCQ-specific. Generators for
   other item kinds (`short_answer`, `matching`) may leave it `None`.
   The `POST /attempts` endpoint must handle `None` gracefully.
