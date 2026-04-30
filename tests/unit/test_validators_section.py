@@ -10,7 +10,6 @@ from lyw_core.validators.section_quality import (
     SectionQuizPayload,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -46,7 +45,7 @@ def _item(
         source_spans=[_span()],
         difficulty="easy",
         concept_id=concept_id,
-        bloom_level=bloom_level,  # type: ignore[arg-type]
+        bloom_level=bloom_level,
     )
 
 
@@ -80,7 +79,7 @@ def test_coverage_fails_when_concept_has_no_items() -> None:
 
 def test_coverage_fails_lists_all_uncovered_concepts() -> None:
     concepts = [_concept("c1"), _concept("c2"), _concept("c3")]
-    items = []
+    items: list[AssessmentItem] = []
     result = CoverageValidator().validate(SectionQuizPayload(concepts, items))
     assert result.passed is False
     reason = result.reason or ""
@@ -192,5 +191,7 @@ def test_active_learning_treats_none_as_remember() -> None:
 
 
 def test_active_learning_fails_with_empty_items() -> None:
-    result = ActiveLearningValidator().validate(SectionQuizPayload([_concept("c1")], []))
+    result = ActiveLearningValidator().validate(
+        SectionQuizPayload([_concept("c1")], [])
+    )
     assert result.passed is False
