@@ -11,7 +11,6 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -27,7 +26,9 @@ async def _null_lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def _span() -> SourceSpan:
-    return SourceSpan(doc_id="doc-1", page_start=1, page_end=1, char_start=0, char_end=50)
+    return SourceSpan(
+        doc_id="doc-1", page_start=1, page_end=1, char_start=0, char_end=50
+    )
 
 
 def _graph() -> LessonGraph:

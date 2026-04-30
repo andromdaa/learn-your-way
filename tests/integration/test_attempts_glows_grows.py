@@ -20,6 +20,7 @@ from lesson_graph import ConceptNode, LessonGraph, SourceSpan
 from lesson_graph.models import AssessmentItem
 from lyw_core.api.app import create_app, get_arq_redis, get_data_dir, get_db
 from lyw_core.db.dao import Database
+from lyw_core.profiles.models import LearnerProfile
 
 
 @asynccontextmanager
@@ -28,7 +29,9 @@ async def _null_lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def _span() -> SourceSpan:
-    return SourceSpan(doc_id="doc-1", page_start=1, page_end=1, char_start=0, char_end=50)
+    return SourceSpan(
+        doc_id="doc-1", page_start=1, page_end=1, char_start=0, char_end=50
+    )
 
 
 def _graph() -> LessonGraph:
@@ -67,7 +70,11 @@ def _mcq_item(*, quiz_id: str | None) -> AssessmentItem:
 async def test_quiz_attempt_returns_glows_grows_via_real_db() -> None:
     """Full handler path: real SQLite, mocked model, quiz item -> glows/grows populated."""
     db = await Database.connect(":memory:")
+    await db.add_source("doc-1", "/data/doc.pdf", "sha256-test")
     await db.upsert_lesson_graph(_graph())
+    await db.add_profile(
+        LearnerProfile(id="p1", grade_level="8", interests=[], goals=[])
+    )
 
     item = _mcq_item(quiz_id="quiz-xyz")
     await db.add_assessment_item(item)
@@ -88,7 +95,7 @@ async def test_quiz_attempt_returns_glows_grows_via_real_db() -> None:
         transport = ASGITransport(app=_app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/v1/attempts",
+                "/attempts",
                 json={"profile_id": "p1", "item_id": "item-1", "response": "Paris"},
             )
 
@@ -106,7 +113,11 @@ async def test_quiz_attempt_returns_glows_grows_via_real_db() -> None:
 async def test_non_quiz_attempt_returns_null_glows_grows_via_real_db() -> None:
     """Full handler path: real SQLite, non-quiz item -> glows/grows null."""
     db = await Database.connect(":memory:")
+    await db.add_source("doc-1", "/data/doc.pdf", "sha256-test")
     await db.upsert_lesson_graph(_graph())
+    await db.add_profile(
+        LearnerProfile(id="p1", grade_level="8", interests=[], goals=[])
+    )
 
     item = _mcq_item(quiz_id=None)
     await db.add_assessment_item(item)
@@ -119,7 +130,7 @@ async def test_non_quiz_attempt_returns_null_glows_grows_via_real_db() -> None:
     transport = ASGITransport(app=_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
-            "/v1/attempts",
+            "/attempts",
             json={"profile_id": "p1", "item_id": "item-1", "response": "Paris"},
         )
 
