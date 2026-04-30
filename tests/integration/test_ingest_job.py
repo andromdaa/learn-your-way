@@ -2,32 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
 import pytest
 from qdrant_client import QdrantClient
-from testcontainers.qdrant import QdrantContainer
 
 from lyw_core.db.dao import Database
 from lyw_core.retrieval.bm25 import BM25Retriever
 from lyw_core.retrieval.embedding import EmbeddingModel
 
 _FIXTURE_PDF = Path(__file__).parent.parent / "fixtures" / "tiny_test.pdf"
-
-
-@pytest.fixture(scope="module")
-def qdrant_client() -> Generator[QdrantClient, None, None]:
-    try:
-        with QdrantContainer() as container:
-            url = (
-                f"http://{container.get_container_host_ip()}"
-                f":{container.get_exposed_port(6333)}"
-            )
-            yield QdrantClient(url=url)
-    except Exception:
-        pytest.skip("Docker not available")
 
 
 @pytest.fixture(scope="module")

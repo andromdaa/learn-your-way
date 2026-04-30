@@ -9,7 +9,7 @@ from lyw_core.healthcheck import ServiceStatus, check_all, ping_qdrant, ping_red
 
 @pytest.mark.integration
 async def test_ping_qdrant_live() -> None:
-    with QdrantContainer() as qdrant:
+    with QdrantContainer(image="qdrant/qdrant:v1.17.0") as qdrant:
         url = f"http://{qdrant.get_container_host_ip()}:{qdrant.get_exposed_port(6333)}"
         result = await ping_qdrant(url)
     assert result == ServiceStatus(name="qdrant", healthy=True, detail="ok")
@@ -26,7 +26,10 @@ async def test_ping_redis_live() -> None:
 
 @pytest.mark.integration
 async def test_check_all_live() -> None:
-    with QdrantContainer() as qdrant, RedisContainer() as redis_c:
+    with (
+        QdrantContainer(image="qdrant/qdrant:v1.17.0") as qdrant,
+        RedisContainer() as redis_c,
+    ):
         qdrant_url = (
             f"http://{qdrant.get_container_host_ip()}:{qdrant.get_exposed_port(6333)}"
         )

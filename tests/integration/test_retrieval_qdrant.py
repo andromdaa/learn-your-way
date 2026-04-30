@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
-
 import pytest
 from qdrant_client import QdrantClient
-from testcontainers.qdrant import QdrantContainer
 
 from lesson_graph.models import ConceptNode, SourceSpan
 from lyw_core.retrieval.embedding import EmbeddingModel
@@ -51,16 +48,6 @@ _CONCEPTS = [
         150,
     ),
 ]
-
-
-@pytest.fixture(scope="module")
-def qdrant_client() -> Generator[QdrantClient, None, None]:
-    try:
-        with QdrantContainer() as container:
-            url = f"http://{container.get_container_host_ip()}:{container.get_exposed_port(6333)}"
-            yield QdrantClient(url=url)
-    except Exception:
-        pytest.skip("Docker not available")
 
 
 @pytest.fixture(scope="module")
