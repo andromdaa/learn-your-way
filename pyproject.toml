@@ -5,7 +5,7 @@ description = "Self-hosted, single-user replica of Google's Learn Your Way."
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
-    "arq>=0.25.0",
+    "arq>=0.25.0,<0.26",  # pinned: arq 0.26+ requires redis[hiredis]<6
     "docling>=2.92.0",
     "fastapi>=0.136.1",
     "haystack-ai>=2.28.0",
@@ -130,7 +130,7 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "\\.\\.\\.",
 ]
-fail_under = 90
+fail_under = 93
 
 [dependency-groups]
 dev = [
