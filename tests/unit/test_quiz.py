@@ -90,7 +90,7 @@ async def test_section_quiz_collects_items_per_concept(
     }
 
     async def fake_generate(
-        concept: ConceptNode, lg: LessonGraph
+        concept: ConceptNode, lg: LessonGraph, *, quiz_id: str | None = None
     ) -> list[AssessmentItem]:
         return items_per_concept[concept.id]
 
@@ -226,7 +226,10 @@ async def test_section_quiz_generate_threads_quiz_id_to_all_items() -> None:
         concept: ConceptNode, lg: LessonGraph, *, quiz_id: str | None = None
     ) -> list[AssessmentItem]:
         # Simulate MCQGenerator stamping quiz_id onto returned items
-        return [item.model_copy(update={"quiz_id": quiz_id}) for item in items_without_quiz_id]
+        return [
+            item.model_copy(update={"quiz_id": quiz_id})
+            for item in items_without_quiz_id
+        ]
 
     mcq_gen = MagicMock(spec=MCQGenerator)
     mcq_gen.generate = AsyncMock(side_effect=fake_generate)

@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS assessment_items (
     difficulty      TEXT NOT NULL,
     correct_answer  TEXT,
     bloom_level     TEXT,
-    source_spans    TEXT NOT NULL
+    source_spans    TEXT NOT NULL,
+    quiz_id         TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_assessment_items_concept_id ON assessment_items(concept_id);
@@ -69,7 +70,8 @@ CREATE TABLE IF NOT EXISTS attempts (
     item_id         TEXT NOT NULL REFERENCES assessment_items(id),
     response        TEXT NOT NULL,
     correct         INTEGER NOT NULL,
-    attempted_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+    attempted_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    quiz_id         TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_attempts_profile_id ON attempts(profile_id);

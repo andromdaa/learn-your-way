@@ -52,15 +52,24 @@ class SectionQuizGenerator:
         self,
         concepts: list[ConceptNode],
         lesson_graph: LessonGraph,
+        *,
+        quiz_id: str | None = None,
     ) -> list[AssessmentItem]:
         """Generate MCQ items for every concept in the section.
+
+        The optional ``quiz_id`` is threaded through to every
+        ``MCQGenerator.generate`` call so that all items in the quiz share
+        a common identifier. Pass ``None`` (default) to preserve the
+        pre-T0c-r3 behaviour for quizzes that do not need Glows/Grows lookup.
 
         Returns the concatenation of all per-concept items (coverage
         enforcement is delegated to the T10 section-quality validators).
         """
         items: list[AssessmentItem] = []
         for concept in concepts:
-            concept_items = await self._mcq_gen.generate(concept, lesson_graph)
+            concept_items = await self._mcq_gen.generate(
+                concept, lesson_graph, quiz_id=quiz_id
+            )
             items.extend(concept_items)
         return items
 

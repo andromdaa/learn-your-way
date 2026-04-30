@@ -9,6 +9,7 @@
       'id': '<uuid>',
       'kind': 'mcq',
       'prompt': 'Q1: What is released?',
+      'quiz_id': None,
       'rationale': 'Photosynthesis releases oxygen as a byproduct.',
       'source_spans': list([
         dict({

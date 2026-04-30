@@ -9,6 +9,7 @@
       'id': 'i1a',
       'kind': 'mcq',
       'prompt': 'Q1a',
+      'quiz_id': None,
       'rationale': 'Test rationale.',
       'source_spans': list([
         dict({
@@ -28,6 +29,7 @@
       'id': 'i1b',
       'kind': 'mcq',
       'prompt': 'Q1b',
+      'quiz_id': None,
       'rationale': 'Test rationale.',
       'source_spans': list([
         dict({
@@ -47,6 +49,7 @@
       'id': 'i2a',
       'kind': 'mcq',
       'prompt': 'Q2a',
+      'quiz_id': None,
       'rationale': 'Test rationale.',
       'source_spans': list([
         dict({
@@ -66,6 +69,7 @@
       'id': 'i2b',
       'kind': 'mcq',
       'prompt': 'Q2b',
+      'quiz_id': None,
       'rationale': 'Test rationale.',
       'source_spans': list([
         dict({
@@ -85,6 +89,7 @@
       'id': 'i3a',
       'kind': 'mcq',
       'prompt': 'Q3a',
+      'quiz_id': None,
       'rationale': 'Test rationale.',
       'source_spans': list([
         dict({
@@ -104,6 +109,7 @@
       'id': 'i3b',
       'kind': 'mcq',
       'prompt': 'Q3b',
+      'quiz_id': None,
       'rationale': 'Test rationale.',
       'source_spans': list([
         dict({

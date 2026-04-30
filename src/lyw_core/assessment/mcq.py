@@ -59,8 +59,15 @@ class MCQGenerator:
         self,
         concept: ConceptNode,
         lesson_graph: LessonGraph,
+        *,
+        quiz_id: str | None = None,
     ) -> list[AssessmentItem]:
-        """Generate MCQs for concept; return items passing every validator."""
+        """Generate MCQs for concept; return items passing every validator.
+
+        The optional ``quiz_id`` groups all items in a section quiz together,
+        enabling Glows/Grows retrieval by quiz (T0c-r4). Pass ``None`` (the
+        default) for embedded MCQs that are not part of a section quiz.
+        """
         messages = build_mcq_messages(concept)
         raw = await self._model.complete(messages)
 
@@ -109,6 +116,7 @@ class MCQGenerator:
                 concept_id=concept.id,
                 correct_answer=cand.correct_answer,
                 bloom_level=cand.bloom_level,
+                quiz_id=quiz_id,
             )
 
             payload = ItemValidationPayload(item=item, lesson_graph=lesson_graph)
