@@ -45,6 +45,7 @@ def get_arq_redis(request: Request) -> ArqRedis:
 def create_app(
     lifespan: Callable[..., Any] = _default_lifespan,
 ) -> FastAPI:
+    from lyw_core.api.routes.attempts import router as attempts_router
     from lyw_core.api.routes.lessons import router as lessons_router
     from lyw_core.api.routes.profiles import router as profiles_router
     from lyw_core.api.routes.sources import router as sources_router
@@ -63,6 +64,7 @@ def create_app(
     app.include_router(sources_router)
     app.include_router(lessons_router)
     app.include_router(profiles_router)
+    app.include_router(attempts_router)
     return app
 
 
