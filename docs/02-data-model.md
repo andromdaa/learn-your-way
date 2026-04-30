@@ -17,7 +17,7 @@ The authoritative schema lives in `src/lesson_graph/models.py`. The
 shape is reproduced here for review:
 
 ```python
-from typing import Any, Literal, Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -38,6 +38,18 @@ class SourceSpan(BaseModel):
         return self
 
 
+class ReplacementRecord(BaseModel):
+    original_span: SourceSpan
+    replacement_text: str
+    justification: str  # non-empty, enforced by field_validator
+
+
+class PersonalizationProfile(BaseModel):
+    grade_level: str
+    interests: list[str]
+    replacements: list[ReplacementRecord] = Field(default_factory=list)
+
+
 class ConceptNode(BaseModel):
     id: str
     title: str
@@ -54,7 +66,7 @@ class AssessmentItem(BaseModel):
     kind: Literal["mcq", "matching", "short_answer", "drag_drop_timeline"]
     prompt: str
     rationale: str
-    source_spans: list[SourceSpan]
+    source_spans: list[SourceSpan] = Field(min_length=1)
     difficulty: Literal["easy", "medium", "hard"]
     correct_answer: str | None = None  # MCQ only; None for other kinds
     bloom_level: (
@@ -66,9 +78,8 @@ class AssessmentItem(BaseModel):
 class DerivedAsset(BaseModel):
     id: str
     kind: Literal["immersive_text", "slides", "mind_map", "timeline", "image"]
-    based_on_concepts: list[str]
-    # TODO(phase-2): replace with TypedDict.
-    personalization_profile: dict[str, Any]
+    based_on_concepts: list[str] = Field(min_length=1)
+    personalization_profile: PersonalizationProfile  # ADR-0009
     uri: str | None = None
 ```
 
@@ -108,10 +119,10 @@ These hold regardless of modality, generator, or pipeline phase:
   treats index 0 as the highest-priority prerequisite (ADR-0012).
 - Every `DerivedAsset` references at least one concept in
   `based_on_concepts`.
-- `personalization_profile` is `dict[str, Any]` until phase 2 ships.
-  Phase 2 replaces it with a `PersonalizationProfile` Pydantic model
-  that carries a `replacements: list[ReplacementRecord]` field. See
-  `specs/phase-2-personalization.md`.
+- `DerivedAsset.personalization_profile` is a typed `PersonalizationProfile`
+  Pydantic model (ADR-0009). Every entry in `PersonalizationProfile.replacements`
+  carries a non-empty `justification`; empty justifications are rejected
+  by a field validator on `ReplacementRecord`.
 
 A round-trip test runs at ingest: every character in every span must
 resolve back to the source text.

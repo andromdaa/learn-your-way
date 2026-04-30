@@ -13,6 +13,8 @@ from lesson_graph import (
     ConceptNode,
     DerivedAsset,
     LessonGraph,
+    PersonalizationProfile,
+    ReplacementRecord,
     SourceSpan,
 )
 
@@ -227,12 +229,16 @@ def test_assessment_item_rejects_unknown_bloom_level() -> None:
 # DerivedAsset --------------------------------------------------------------
 
 
+def _profile() -> PersonalizationProfile:
+    return PersonalizationProfile(grade_level="8", interests=[])
+
+
 def test_derived_asset_valid() -> None:
     asset = DerivedAsset(
         id="a1",
         kind="slides",
         based_on_concepts=["c1"],
-        personalization_profile={"grade_level": "8", "interests": ["sports"]},
+        personalization_profile=_profile(),
     )
     assert asset.uri is None
 
@@ -243,7 +249,7 @@ def test_derived_asset_requires_concept() -> None:
             id="a1",
             kind="slides",
             based_on_concepts=[],
-            personalization_profile={},
+            personalization_profile=_profile(),
         )
 
 
@@ -254,7 +260,7 @@ def test_derived_asset_rejects_audio_lesson_kind() -> None:
             id="a1",
             kind="audio_lesson",
             based_on_concepts=["c1"],
-            personalization_profile={},
+            personalization_profile=_profile(),
         )
 
 
@@ -264,9 +270,61 @@ def test_derived_asset_accepts_all_in_scope_kinds() -> None:
             id=f"a-{kind}",
             kind=kind,
             based_on_concepts=["c1"],
-            personalization_profile={},
+            personalization_profile=_profile(),
         )
         assert asset.kind == kind
+
+
+# ReplacementRecord / PersonalizationProfile --------------------------------
+
+
+def test_replacement_record_rejects_empty_justification() -> None:
+    with pytest.raises(ValidationError):
+        ReplacementRecord(
+            original_span=_span(),
+            replacement_text="new text",
+            justification="",
+        )
+
+
+def test_replacement_record_rejects_whitespace_justification() -> None:
+    with pytest.raises(ValidationError):
+        ReplacementRecord(
+            original_span=_span(),
+            replacement_text="new text",
+            justification="   ",
+        )
+
+
+def test_personalization_profile_round_trip() -> None:
+    record = ReplacementRecord(
+        original_span=_span(),
+        replacement_text="a football analogy",
+        justification="Learner listed football as an interest.",
+    )
+    profile = PersonalizationProfile(
+        grade_level="8",
+        interests=["football", "coding"],
+        replacements=[record],
+    )
+    rebuilt = PersonalizationProfile.model_validate_json(profile.model_dump_json())
+    assert rebuilt == profile
+
+
+def test_personalization_profile_replacements_default_empty() -> None:
+    profile = PersonalizationProfile(grade_level="10", interests=[])
+    assert profile.replacements == []
+
+
+def test_derived_asset_with_typed_profile() -> None:
+    profile = PersonalizationProfile(grade_level="6", interests=["space"])
+    asset = DerivedAsset(
+        id="a1",
+        kind="immersive_text",
+        based_on_concepts=["c1"],
+        personalization_profile=profile,
+    )
+    assert asset.personalization_profile.grade_level == "6"
 
 
 # LessonGraph ---------------------------------------------------------------

@@ -4,6 +4,8 @@ from .models import (
     ConceptNode,
     DerivedAsset,
     LessonGraph,
+    PersonalizationProfile,
+    ReplacementRecord,
     SourceSpan,
 )
 
@@ -14,5 +16,7 @@ __all__ = [
     "DerivedAsset",
     "LessonGraph",
     "ModelClient",
+    "PersonalizationProfile",
+    "ReplacementRecord",
     "SourceSpan",
 ]
