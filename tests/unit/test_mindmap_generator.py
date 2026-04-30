@@ -24,7 +24,9 @@ def _span() -> SourceSpan:
     )
 
 
-def _concept(cid: str, title: str, prerequisites: list[str] | None = None) -> ConceptNode:
+def _concept(
+    cid: str, title: str, prerequisites: list[str] | None = None
+) -> ConceptNode:
     return ConceptNode(
         id=cid,
         title=title,

@@ -6,12 +6,7 @@ from lyw_core.validators.mindmap import MindMapValidator
 
 
 def _valid_mermaid() -> str:
-    return (
-        "flowchart TD\n"
-        '    c1["Roots"]\n'
-        '    c2["Stems"]\n'
-        "    c1 --> c2\n"
-    )
+    return 'flowchart TD\n    c1["Roots"]\n    c2["Stems"]\n    c1 --> c2\n'
 
 
 def test_valid_mermaid_passes() -> None:
@@ -61,7 +56,7 @@ def test_wrong_preamble_keyword_fails() -> None:
 
 
 def test_empty_node_label_fails() -> None:
-    payload = "flowchart TD\n" '    c1[""]\n' '    c2["Stems"]\n' "    c1 --> c2\n"
+    payload = 'flowchart TD\n    c1[""]\n    c2["Stems"]\n    c1 --> c2\n'
     result = MindMapValidator().validate(payload)
     assert result.passed is False
     reason = result.reason or ""
