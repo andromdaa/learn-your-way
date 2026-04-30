@@ -71,7 +71,8 @@ uv run pytest -m integration       # integration tests (needs Docker + Ollama)
 uv run pre-commit run --all-files  # run all pre-commit hooks
 
 # Run services locally:
-uvicorn lyw_core.api.app:app --reload        # FastAPI dev server (port 8000)
+uvicorn lyw_core.api.app:app --reload        # FastAPI dev server — JSON API only (port 8000)
+uvicorn lyw_web.app:app --reload             # FastAPI dev server + browser test UI (port 8000)
 arq lyw_core.worker.settings.WorkerSettings  # Arq ingest worker (needs Redis)
 python -m lyw_core inspect <pdf>             # parse PDF, print concept tree
 
@@ -112,6 +113,14 @@ uvx --with pydantic mypy src/      # mypy needs the pydantic plugin
 - `AssessmentItem.concept_id` must be populated at generation time; it
   is not backfill-able via span join (ADR-0010).
 - Serialise `GlowsGrows` with `dataclasses.asdict()`, not `.model_dump()`.
+
+## Packages
+
+- `src/lesson_graph` — domain models (LessonGraph, ConceptNode, AssessmentItem, …). No external services.
+- `src/lyw_core` — ingest pipeline, personalization, generators, FastAPI API, Arq workers, SQLite DAO, settings.
+- `src/lyw_web` — browser test harness UI. Depends on `lyw_core`; `lyw_core` is unaware of `lyw_web`. Launch with `uvicorn lyw_web.app:app`.
+
+New feature areas belong in their own top-level `src/lyw_<area>/` package. Never expand `lyw_core` with UI, CLI, or other presentation-layer concerns.
 
 ## Phases
 

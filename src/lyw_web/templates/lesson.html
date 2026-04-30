@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ graph.id }} — Learn Your Way{% endblock %}
+{% block content %}
+
+<section class="card">
+  <h2>Lesson <span class="mono">{{ graph.id }}</span></h2>
+  <p class="meta">Source: <span class="mono">{{ graph.source_id }}</span> &mdash; {{ graph.concepts | length }} concepts</p>
+</section>
+
+<section class="card">
+  <h2>Concept tree</h2>
+  <ul class="concept-list">
+    {% for c in graph.concepts %}
+    <li class="concept-item">
+      <details>
+        <summary>
+          <span class="concept-title">{{ c.title }}</span>
+          <span class="mono concept-id">{{ c.id }}</span>
+        </summary>
+        <p>{{ c.summary }}</p>
+        <p class="objective">Objective: {{ c.learning_objective }}</p>
+        {% if c.prerequisites %}
+        <p class="prereqs">Prerequisites: {{ c.prerequisites | join(", ") }}</p>
+        {% endif %}
+        <p class="spans">Spans: {{ c.source_spans | length }} source span(s)</p>
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="card">
+  <h2>Generate</h2>
+  {% if profiles %}
+  <form id="generate-form" data-lesson-id="{{ graph.id }}">
+    <div class="form-row">
+      <label>Profile
+        <select name="profile_id" required>
+          {% for p in profiles %}
+          <option value="{{ p.id }}">{{ p.grade_level }} — {{ p.interests | join(", ") }} ({{ p.id[:8] }}…)</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Kind
+        <select name="kind" id="kind-select" required>
+          <optgroup label="Lesson-scoped">
+            {% for k in lesson_scoped_kinds %}
+            <option value="{{ k }}">{{ k }}</option>
+            {% endfor %}
+          </optgroup>
+          <optgroup label="Concept-scoped">
+            {% for k in concept_scoped_kinds %}
+            <option value="{{ k }}">{{ k }}</option>
+            {% endfor %}
+          </optgroup>
+        </select>
+      </label>
+      <label id="concept-label">Concept
+        <select name="concept_id" id="concept-select">
+          <option value="{{ lesson_scoped_id }}">(lesson-scoped)</option>
+          {% for c in graph.concepts %}
+          <option value="{{ c.id }}">{{ c.title }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <button type="submit">Generate</button>
+  </form>
+  <div id="generate-status" class="status-bar" hidden></div>
+  <div id="asset-viewer" hidden></div>
+  {% else %}
+  <p class="empty">No profiles yet. <a href="/ui">Create a profile</a> first.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Derived assets
+    {% if assets %}
+      <span class="count">{{ assets | length }}</span>
+    {% endif %}
+  </h2>
+  {% if assets %}
+  <table class="data-table" id="assets-table">
+    <thead><tr><th>Kind</th><th>Concept</th><th>Profile</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {% for a in assets %}
+      <tr>
+        <td><span class="kind-badge kind-{{ a.kind }}">{{ a.kind }}</span></td>
+        <td class="mono truncate" title="{{ a.concept_id }}">{{ a.concept_id if a.concept_id != "__lesson__" else "(lesson)" }}</td>
+        <td class="mono truncate" title="{{ a.profile_id }}">{{ a.profile_id[:8] }}…</td>
+        <td>{{ a.created_at[:19] }}</td>
+        <td><button class="btn-small view-asset" data-asset-id="{{ a.id }}">View</button></td>
+      </tr>
+      <tr class="asset-viewer-row" id="viewer-{{ a.id }}" hidden>
+        <td colspan="5"><div class="asset-content" id="content-{{ a.id }}">Loading…</div></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No assets generated yet.</p>
+  {% endif %}
+</section>
+
+{% endblock %}
