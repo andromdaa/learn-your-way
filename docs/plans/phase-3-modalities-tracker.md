@@ -22,13 +22,15 @@ prerequisites.
 - [x] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
 - [x] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
 - [x] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
-- [ ] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
+- [x] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
 - [ ] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
 - [ ] [T4: Timeline Arq integration (extend personalize_concept + generate endpoint)](phase-3/T4-timeline-arq.md)
 - [ ] [T5: Slide generator + validator (per-slide discard, MCQGenerator pattern)](phase-3/T5-slide-generator.md)
 - [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T2 — 2026-04-30**: `personalize_concept` extended with `elif kind == "mind_map"` branch: fetches `LearnerProfile`, constructs `PersonalizationProfile` via Pydantic constructor, calls `MindMapGenerator().generate()`, validates with `run_validators([MindMapValidator()])`, writes `.mmd` bytes via `data_dir.write_asset(..., suffix=".mmd")`, persists DAO record with `concept_id=LESSON_SCOPED_CONCEPT_ID`. `GenerateRequest.kind` Literal in `generate.py` already included `"mind_map"` (committed in prior session). `LESSON_SCOPED_CONCEPT_ID` constant was already defined in `dao.py`. Chose to import `PersonalizationProfile` locally inside the `mind_map` branch to avoid adding a top-level import to `personalize.py` that would require the lesson_graph package at module load time — matches existing pattern for selective imports.
 
 - **T1 — 2026-04-30**: `MindMapGenerator` is pure graph-to-Mermaid with no model call; BFS from focal concept (most prerequisites, first-wins on ties) with visited-set cycle guard; node IDs sanitized via regex `[^A-Za-z0-9] → _`. `MindMapValidator` uses textual heuristics (`["` count for node count, `[""]` for empty labels, first-token check for preamble) — no Mermaid parser. Chose `list[str]` BFS order over `set` to keep snapshot deterministic. `profile` parameter is accepted but unused (API parity with other modality generators; T2 may use it). `noqa: ARG002` omitted after confirming ARG002 is not enabled in this project's ruff config.
 
