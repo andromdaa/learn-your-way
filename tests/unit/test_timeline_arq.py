@@ -16,7 +16,6 @@ from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID
 from lyw_core.modalities.timeline import TimelineResult, TimelineSkipped
 from lyw_core.validators.base import ValidationError
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -242,9 +241,7 @@ async def test_timeline_validation_error_propagates() -> None:
         ) as mock_generator_cls,
         patch(
             "lyw_core.worker.jobs.personalize.run_validators",
-            side_effect=ValidationError(
-                ["timeline must have at least one section"]
-            ),
+            side_effect=ValidationError(["timeline must have at least one section"]),
         ),
     ):
         instance = mock_generator_cls.return_value
