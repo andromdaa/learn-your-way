@@ -321,6 +321,40 @@ async def test_personalize_concept_concept_not_found(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_personalize_concept_relevel_profile_not_found(tmp_path: Path) -> None:
+    from lyw_core.worker.jobs.personalize import personalize_concept
+
+    ctx = _make_ctx(tmp_path)
+    ctx["db"].get_profile = AsyncMock(return_value=None)
+
+    with pytest.raises(ValueError, match="profile not found"):
+        await personalize_concept(
+            ctx,
+            lesson_id="g1",
+            concept_id="c1",
+            profile_id="missing-profile",
+            kind="relevel",
+        )
+
+
+@pytest.mark.asyncio
+async def test_personalize_concept_replace_profile_not_found(tmp_path: Path) -> None:
+    from lyw_core.worker.jobs.personalize import personalize_concept
+
+    ctx = _make_ctx(tmp_path)
+    ctx["db"].get_profile = AsyncMock(return_value=None)
+
+    with pytest.raises(ValueError, match="profile not found"):
+        await personalize_concept(
+            ctx,
+            lesson_id="g1",
+            concept_id="c1",
+            profile_id="missing-profile",
+            kind="replace",
+        )
+
+
+@pytest.mark.asyncio
 async def test_personalize_concept_writes_file_to_data_dir(tmp_path: Path) -> None:
     from lyw_core.worker.jobs.personalize import personalize_concept
 
