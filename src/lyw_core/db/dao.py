@@ -491,6 +491,29 @@ class Database:
         )
         await self._conn.commit()
 
+    async def get_derived_asset_by_id(self, asset_id: str) -> DerivedAsset | None:
+        """Return a DerivedAsset by its primary key id, or None if not found."""
+        async with self._conn.execute(
+            """
+            SELECT id, lesson_id, concept_id, kind, profile_id, file_path, created_at
+            FROM derived_assets
+            WHERE id = ?
+            """,
+            (asset_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return DerivedAsset(
+            id=row["id"],
+            lesson_id=row["lesson_id"],
+            concept_id=row["concept_id"],
+            kind=row["kind"],
+            profile_id=row["profile_id"],
+            file_path=row["file_path"],
+            created_at=row["created_at"],
+        )
+
     async def get_derived_asset(
         self,
         lesson_id: str,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import FastAPI
@@ -114,7 +114,7 @@ def test_get_asset_file_missing_returns_404(tmp_path: Path) -> None:
 def test_get_mmd_asset_returns_text_content(tmp_path: Path) -> None:
     """GET /v1/assets/{asset_id} for a .mmd file returns the Mermaid text."""
     mmd_path = tmp_path / "mindmap.mmd"
-    mmd_path.write_text("flowchart TD\n    c1[\"Root\"]\n")
+    mmd_path.write_text('flowchart TD\n    c1["Root"]\n')
 
     asset = _make_asset(asset_id="asset-mmd", file_path=str(mmd_path), kind="mind_map")
 

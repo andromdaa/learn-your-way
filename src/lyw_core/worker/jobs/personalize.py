@@ -10,6 +10,7 @@ import structlog
 from lyw_core.assessment.mnemonic import MnemonicGenerator
 from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID, Database, DerivedAsset
 from lyw_core.modalities.mindmap import MindMapGenerator
+from lyw_core.modalities.slides import SlideGenerator
 from lyw_core.modalities.timeline import TimelineGenerator, TimelineSkipped
 from lyw_core.personalization.relevel import ReLeveler
 from lyw_core.personalization.replace import ExampleReplacer
@@ -21,7 +22,9 @@ from lyw_core.validators.timeline import TimelineValidator
 
 _logger = structlog.get_logger(__name__)
 
-_VALID_KINDS = frozenset({"relevel", "replace", "mnemonic", "mind_map", "timeline"})
+_VALID_KINDS = frozenset(
+    {"relevel", "replace", "mnemonic", "mind_map", "timeline", "slides"}
+)
 
 
 async def personalize_concept(
@@ -45,8 +48,8 @@ async def personalize_concept(
     profile_id:
         The LearnerProfile id.
     kind:
-        One of ``"relevel"``, ``"replace"``, ``"mnemonic"``, ``"mind_map"``, or
-        ``"timeline"``.
+        One of ``"relevel"``, ``"replace"``, ``"mnemonic"``, ``"mind_map"``,
+        ``"timeline"``, or ``"slides"``.
 
     Returns
     -------
@@ -106,6 +109,36 @@ async def personalize_concept(
         # Non-skip path: validate and persist.
         run_validators([TimelineValidator()], tl_result.mermaid)
         file_path = data_dir.write_asset(tl_result.mermaid.encode(), suffix=".mmd")
+        effective_concept_id = LESSON_SCOPED_CONCEPT_ID
+    elif kind == "slides":
+        import dataclasses
+        import json as _json
+
+        from pydantic import BaseModel as _BaseModel
+
+        from lesson_graph.models import PersonalizationProfile
+
+        learner_profile = await db.get_profile(profile_id)
+        if learner_profile is None:
+            raise ValueError(f"profile not found: {profile_id!r}")
+        profile_obj = PersonalizationProfile(
+            grade_level=learner_profile.grade_level,
+            interests=learner_profile.interests,
+        )
+        gen_slides = SlideGenerator()
+        deck = await gen_slides.generate(lesson_graph, profile_obj, model_client)
+
+        # dataclasses.asdict() does not recurse into Pydantic BaseModel instances
+        # (SourceSpan is a Pydantic model). Use a custom encoder that calls
+        # .model_dump() on any Pydantic model encountered during JSON serialisation.
+        class _PydanticEncoder(_json.JSONEncoder):
+            def default(self, o: object) -> object:
+                if isinstance(o, _BaseModel):
+                    return o.model_dump()
+                return super().default(o)
+
+        deck_json = _json.dumps(dataclasses.asdict(deck), cls=_PydanticEncoder)
+        file_path = data_dir.write_asset(deck_json.encode(), suffix=".json")
         effective_concept_id = LESSON_SCOPED_CONCEPT_ID
     else:
         # Concept-level generators: look up the concept node first.

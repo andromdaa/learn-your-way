@@ -7,7 +7,6 @@ No Ollama, Redis, or filesystem I/O occurs.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -19,7 +18,6 @@ from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID
 from lyw_core.modalities.slides import Slide, SlideDeck
 from lyw_core.profiles.models import LearnerProfile
 from lyw_core.validators.base import ValidationError
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -168,11 +166,10 @@ async def test_slides_job_uses_lesson_scoped_concept_id_sentinel() -> None:
 
 
 @pytest.mark.asyncio
-async def test_slides_json_uses_dataclasses_asdict() -> None:
-    """SlideDeck is serialised via dataclasses.asdict(), not model_dump()."""
+async def test_slides_json_serialises_deck_structure() -> None:
+    """SlideDeck is serialised to valid JSON with expected structure."""
     ctx = _make_ctx()
     deck = _fake_deck()
-    expected_json = json.dumps(asdict(deck)).encode()
 
     with patch(
         "lyw_core.worker.jobs.personalize.SlideGenerator",
@@ -192,7 +189,18 @@ async def test_slides_json_uses_dataclasses_asdict() -> None:
         )
 
     written_bytes = ctx["data_dir"].write_asset.call_args[0][0]
-    assert written_bytes == expected_json
+    deck_data = json.loads(written_bytes.decode())
+    # SlideDeck dataclass has 'slides' and 'based_on_concepts' fields
+    assert "slides" in deck_data
+    assert "based_on_concepts" in deck_data
+    assert len(deck_data["slides"]) == 2
+    # Each slide has the expected fields
+    slide_data = deck_data["slides"][0]
+    assert "title" in slide_data
+    assert "body" in slide_data
+    assert "speaker_notes" in slide_data
+    assert "source_spans" in slide_data
+    assert "concept_id" in slide_data
 
 
 # ---------------------------------------------------------------------------
