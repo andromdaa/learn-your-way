@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from lesson_graph import ConceptNode, LessonGraph, SourceSpan
+from lesson_graph.models import AssessmentItem
 from lyw_core.api.app import create_app, get_arq_redis, get_data_dir, get_db
 
 
@@ -240,3 +241,221 @@ def test_post_profiles_in_openapi_schema(client: TestClient) -> None:
     schema = client.get("/openapi.json").json()
     assert "/profiles" in schema["paths"]
     assert "post" in schema["paths"]["/profiles"]
+
+
+# ---------------------------------------------------------------------------
+# POST /attempts
+# ---------------------------------------------------------------------------
+
+
+def _mcq_item(correct_answer: str | None = "Paris") -> AssessmentItem:
+    return AssessmentItem(
+        id="item-1",
+        kind="mcq",
+        prompt="What is the capital of France?",
+        rationale="Paris is the capital.",
+        source_spans=[_span()],
+        difficulty="easy",
+        concept_id="c1",
+        correct_answer=correct_answer,
+    )
+
+
+def test_post_attempts_returns_200_correct(client: TestClient) -> None:
+    item = _mcq_item("Paris")
+    client.app.dependency_overrides[get_db].return_value = None  # type: ignore[attr-defined]
+    # Use a dedicated mock for this test
+    mock_db = AsyncMock()
+    mock_db.get_item_by_id.return_value = item
+    mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_graph.return_value = _graph()
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with TestClient(_app) as c:
+        response = c.post(
+            "/attempts",
+            json={"profile_id": "p1", "item_id": "item-1", "response": "Paris"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["correct"] is True
+    assert body["rationale"] == "Paris is the capital."
+    assert "source_spans" in body
+    assert body["suggested_next_concept_id"] is None
+
+
+def test_post_attempts_returns_200_incorrect(client: TestClient) -> None:
+    item = _mcq_item("Paris")
+    mock_db = AsyncMock()
+    mock_db.get_item_by_id.return_value = item
+    mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_graph.return_value = _graph()
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with TestClient(_app) as c:
+        response = c.post(
+            "/attempts",
+            json={"profile_id": "p1", "item_id": "item-1", "response": "Lyon"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["correct"] is False
+
+
+def test_post_attempts_returns_404_unknown_item(client: TestClient) -> None:
+    mock_db = AsyncMock()
+    mock_db.get_item_by_id.return_value = None
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with TestClient(_app) as c:
+        response = c.post(
+            "/attempts",
+            json={"profile_id": "p1", "item_id": "unknown", "response": "anything"},
+        )
+    assert response.status_code == 404
+
+
+def test_post_attempts_null_correct_answer_returns_manual_eval(
+    client: TestClient,
+) -> None:
+    item = _mcq_item(None)
+    mock_db = AsyncMock()
+    mock_db.get_item_by_id.return_value = item
+    mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_graph.return_value = _graph()
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with TestClient(_app) as c:
+        response = c.post(
+            "/attempts",
+            json={"profile_id": "p1", "item_id": "item-1", "response": "some answer"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["correct"] is False
+    assert body["rationale"] == "Manual evaluation required"
+
+
+# ---------------------------------------------------------------------------
+# POST /recommendations/next
+# ---------------------------------------------------------------------------
+
+
+def test_post_recommendations_next_returns_concept_id_when_gap_exists() -> None:
+    from lyw_core.assessment.gap import GapDetector
+
+    graph = LessonGraph(
+        id="lesson_doc-1",
+        source_id="doc-1",
+        concepts=[
+            ConceptNode(
+                id="c1",
+                title="Concept One",
+                summary="Summary.",
+                learning_objective="Understand it.",
+                source_spans=[_span()],
+                prerequisites=["c2"],
+            ),
+            ConceptNode(
+                id="c2",
+                title="Concept Two",
+                summary="Prereq summary.",
+                learning_objective="Learn prereq.",
+                source_spans=[_span()],
+                prerequisites=[],
+            ),
+        ],
+    )
+
+    prereq_node = graph.concepts[1]
+
+    mock_db = AsyncMock()
+    mock_db.get_lesson_graph.return_value = graph
+
+    mock_detector = AsyncMock(spec=GapDetector)
+    mock_detector.next_concept.return_value = prereq_node
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with (
+        patch(
+            "lyw_core.api.routes.attempts.GapDetector",
+            return_value=mock_detector,
+        ),
+        TestClient(_app) as c,
+    ):
+        response = c.post(
+            "/recommendations/next",
+            json={"profile_id": "p1", "lesson_id": "lesson_doc-1"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["next_concept_id"] == "c2"
+    assert "reason" in body
+
+
+def test_post_recommendations_next_returns_null_when_no_gap() -> None:
+    from lyw_core.assessment.gap import GapDetector
+
+    mock_db = AsyncMock()
+    mock_db.get_lesson_graph.return_value = _graph()
+
+    mock_detector = AsyncMock(spec=GapDetector)
+    mock_detector.next_concept.return_value = None
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with (
+        patch(
+            "lyw_core.api.routes.attempts.GapDetector",
+            return_value=mock_detector,
+        ),
+        TestClient(_app) as c,
+    ):
+        response = c.post(
+            "/recommendations/next",
+            json={"profile_id": "p1", "lesson_id": "lesson_doc-1"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["next_concept_id"] is None
+    assert body["reason"] == "all objectives mastered or no attempts recorded"
+
+
+def test_post_recommendations_next_lesson_not_found_returns_404() -> None:
+    mock_db = AsyncMock()
+    mock_db.get_lesson_graph.return_value = None
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+    _app.dependency_overrides[get_arq_redis] = lambda: AsyncMock()
+
+    with TestClient(_app) as c:
+        response = c.post(
+            "/recommendations/next",
+            json={"profile_id": "p1", "lesson_id": "nonexistent"},
+        )
+    assert response.status_code == 404
