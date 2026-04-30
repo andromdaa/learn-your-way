@@ -2,9 +2,12 @@
 
 import pytest
 
-from lyw_core.validators.base import ValidationError, ValidationResult, run_validators
-from lyw_core.validators.base import Validator  # re-exported
-
+from lyw_core.validators.base import (  # noqa: F401 — Validator exercised via Protocol structural check
+    ValidationError,
+    ValidationResult,
+    Validator,
+    run_validators,
+)
 
 # ---------------------------------------------------------------------------
 # Minimal concrete validators for test use
