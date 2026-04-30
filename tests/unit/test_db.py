@@ -7,7 +7,7 @@ import sqlite3
 
 import pytest
 
-from lesson_graph import ConceptNode, LessonGraph, SourceSpan
+from lesson_graph import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.db import Database
 
 
@@ -182,4 +182,152 @@ async def test_upsert_replaces_concepts_on_update() -> None:
     assert retrieved is not None
     assert len(retrieved.concepts) == 1
     assert retrieved.concepts[0].id == "c3"
+    await db.close()
+
+
+# ---------------------------------------------------------------------------
+# Assessment item helpers
+# ---------------------------------------------------------------------------
+
+
+def _item(id: str, concept_id: str) -> AssessmentItem:
+    return AssessmentItem(
+        id=id,
+        kind="mcq",
+        prompt=f"Question for {concept_id}",
+        rationale="Some rationale",
+        source_spans=[_span()],
+        difficulty="easy",
+        concept_id=concept_id,
+        correct_answer="A",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Attempt DAO tests
+# ---------------------------------------------------------------------------
+
+
+async def test_record_attempt_and_get_profile_attempts() -> None:
+    """record_attempt stores a row; get_profile_attempts returns it."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    concept = _concept("c1")
+    graph = _graph("g1", "src-1", [concept])
+    await db.upsert_lesson_graph(graph)
+
+    # Need a profile before inserting an attempt (FK)
+    from lyw_core.profiles.models import LearnerProfile
+
+    profile = LearnerProfile(id="p1", grade_level="5", interests=[], goals=[])
+    await db.add_profile(profile)
+
+    # Need an assessment item (FK)
+    item = _item("item-1", "c1")
+    await db.add_assessment_item(item)
+
+    await db.record_attempt("p1", "item-1", "my answer", correct=True)
+
+    attempts = await db.get_profile_attempts("p1")
+    assert len(attempts) == 1
+    a = attempts[0]
+    assert a.profile_id == "p1"
+    assert a.item_id == "item-1"
+    assert a.response == "my answer"
+    assert a.correct is True
+    assert a.attempted_at != ""
+    await db.close()
+
+
+async def test_get_profile_attempts_returns_only_own_profile() -> None:
+    """get_profile_attempts filters by profile_id."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    concept = _concept("c1")
+    graph = _graph("g1", "src-1", [concept])
+    await db.upsert_lesson_graph(graph)
+
+    from lyw_core.profiles.models import LearnerProfile
+
+    for pid in ("p1", "p2"):
+        profile = LearnerProfile(id=pid, grade_level="5", interests=[], goals=[])
+        await db.add_profile(profile)
+
+    item = _item("item-1", "c1")
+    await db.add_assessment_item(item)
+
+    await db.record_attempt("p1", "item-1", "answer-p1", correct=True)
+    await db.record_attempt("p2", "item-1", "answer-p2", correct=False)
+
+    p1_attempts = await db.get_profile_attempts("p1")
+    assert len(p1_attempts) == 1
+    assert p1_attempts[0].profile_id == "p1"
+
+    p2_attempts = await db.get_profile_attempts("p2")
+    assert len(p2_attempts) == 1
+    assert p2_attempts[0].profile_id == "p2"
+    await db.close()
+
+
+async def test_get_profile_attempts_empty_for_no_attempts() -> None:
+    """get_profile_attempts returns empty list when profile has no attempts."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+
+    from lyw_core.profiles.models import LearnerProfile
+
+    profile = LearnerProfile(id="p1", grade_level="5", interests=[], goals=[])
+    await db.add_profile(profile)
+
+    attempts = await db.get_profile_attempts("p1")
+    assert attempts == []
+    await db.close()
+
+
+async def test_record_attempt_stores_correct_false() -> None:
+    """record_attempt stores correct=False (INTEGER 0) and returns bool False."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    concept = _concept("c1")
+    graph = _graph("g1", "src-1", [concept])
+    await db.upsert_lesson_graph(graph)
+
+    from lyw_core.profiles.models import LearnerProfile
+
+    profile = LearnerProfile(id="p1", grade_level="5", interests=[], goals=[])
+    await db.add_profile(profile)
+
+    item = _item("item-1", "c1")
+    await db.add_assessment_item(item)
+
+    await db.record_attempt("p1", "item-1", "wrong answer", correct=False)
+
+    attempts = await db.get_profile_attempts("p1")
+    assert len(attempts) == 1
+    assert attempts[0].correct is False
+    await db.close()
+
+
+async def test_get_item_by_id_returns_assessment_item() -> None:
+    """get_item_by_id fetches a single AssessmentItem by its id."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    concept = _concept("c1")
+    graph = _graph("g1", "src-1", [concept])
+    await db.upsert_lesson_graph(graph)
+
+    item = _item("item-1", "c1")
+    await db.add_assessment_item(item)
+
+    fetched = await db.get_item_by_id("item-1")
+    assert fetched is not None
+    assert fetched.id == "item-1"
+    assert fetched.concept_id == "c1"
+
+
+async def test_get_item_by_id_missing_returns_none() -> None:
+    """get_item_by_id returns None for unknown id."""
+    db = await Database.connect(":memory:")
+    result = await db.get_item_by_id("no-such-item")
+    assert result is None
     await db.close()
