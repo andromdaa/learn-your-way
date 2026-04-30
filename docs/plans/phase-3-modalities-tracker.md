@@ -26,9 +26,11 @@ prerequisites.
 - [x] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
 - [x] [T4: Timeline Arq integration (extend personalize_concept + generate endpoint)](phase-3/T4-timeline-arq.md)
 - [x] [T5: Slide generator + validator (per-slide discard, MCQGenerator pattern)](phase-3/T5-slide-generator.md)
-- [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
+- [x] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T6 — 2026-04-30**: `personalize_concept` extended with `elif kind == "slides"` branch: awaits `SlideGenerator().generate()`, serialises `SlideDeck` via `dataclasses.asdict()` + a `_PydanticEncoder` JSON encoder (needed because `source_spans: list[SourceSpan]` are Pydantic models that `asdict()` cannot recurse into). Writes `.json` suffix, persists DAO record with `concept_id=LESSON_SCOPED_CONCEPT_ID`. New DAO method `get_derived_asset_by_id(asset_id: str)` queries `derived_assets` by primary key `id` (not the composite lookup key used by `get_derived_asset`). New route `GET /v1/assets/{asset_id}` returns file content with content-type based on suffix (`.json` → `application/json`, `.mmd`/`.txt` → `text/plain`); returns 404 if DAO row missing or file deleted. `GenerateRequest.kind` Literal and `_VALID_KINDS` both gain `"slides"`. `assets_router` included in `create_app()` after all other routers.
 
 - **T5 — 2026-04-30**: `SlideGenerator` uses two-step LLM approach: outline call returns JSON array of `SlideOutlineItem` (title, key_points, concept_id); one body call per item returns `{body, speaker_notes}`. Both steps use `pydantic.BaseModel.model_validate_json` / `model_validate` for parsing; malformed JSON on the outline step raises `ValidationError`. Per-slide discard: `SlideValidator` checks title/body/source_spans/concept_id are non-empty; failing slides are warned via structlog and skipped; all discarded raises `ValidationError`. `SlideValidator` uses `payload: Any` (not `Slide`) to break the circular import between `modalities/slides.py` and `validators/slides.py`. Prompt builders live under `src/lyw_core/modalities/prompts/slides.py`; `build_slide_body_messages` takes only `(title, key_points)` — concept summary not needed in the body step since the outline already encodes the key points. `SlideDeck.based_on_concepts` is a deduped list of `concept_id` from accepted slides.
 
