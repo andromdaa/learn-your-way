@@ -48,3 +48,17 @@ CREATE TABLE IF NOT EXISTS profiles (
     goals       TEXT NOT NULL DEFAULT '[]',
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
+
+CREATE TABLE IF NOT EXISTS assessment_items (
+    id              TEXT PRIMARY KEY,
+    concept_id      TEXT NOT NULL REFERENCES concepts(id),
+    kind            TEXT NOT NULL,
+    prompt          TEXT NOT NULL,
+    rationale       TEXT NOT NULL,
+    difficulty      TEXT NOT NULL,
+    correct_answer  TEXT,
+    bloom_level     TEXT,
+    source_spans    TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_assessment_items_concept_id ON assessment_items(concept_id);

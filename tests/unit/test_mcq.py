@@ -110,9 +110,7 @@ async def test_mcq_returns_only_passing_items(snapshot: SnapshotAssertion) -> No
     clarity = _passing_validator()
     dao = await _make_dao()
 
-    gen = MCQGenerator(
-        model_client=model, validators=[faithfulness, clarity], dao=dao
-    )
+    gen = MCQGenerator(model_client=model, validators=[faithfulness, clarity], dao=dao)
     concept = _concept()
     items = await gen.generate(concept, _graph(concept))
 
@@ -138,9 +136,7 @@ async def test_mcq_discards_items_missing_correct_answer() -> None:
     model = AsyncMock()
     model.complete = AsyncMock(return_value=json.dumps([bad]))
     dao = await _make_dao()
-    gen = MCQGenerator(
-        model_client=model, validators=[_passing_validator()], dao=dao
-    )
+    gen = MCQGenerator(model_client=model, validators=[_passing_validator()], dao=dao)
     items = await gen.generate(_concept(), _graph())
     assert items == []
     await dao.close()
@@ -152,9 +148,7 @@ async def test_mcq_discards_items_missing_bloom_level() -> None:
     model = AsyncMock()
     model.complete = AsyncMock(return_value=json.dumps([bad]))
     dao = await _make_dao()
-    gen = MCQGenerator(
-        model_client=model, validators=[_passing_validator()], dao=dao
-    )
+    gen = MCQGenerator(model_client=model, validators=[_passing_validator()], dao=dao)
     items = await gen.generate(_concept(), _graph())
     assert items == []
     await dao.close()
@@ -165,9 +159,7 @@ async def test_mcq_discards_when_correct_answer_not_in_options() -> None:
     model = AsyncMock()
     model.complete = AsyncMock(return_value=json.dumps([bad]))
     dao = await _make_dao()
-    gen = MCQGenerator(
-        model_client=model, validators=[_passing_validator()], dao=dao
-    )
+    gen = MCQGenerator(model_client=model, validators=[_passing_validator()], dao=dao)
     items = await gen.generate(_concept(), _graph())
     assert items == []
     await dao.close()
@@ -178,9 +170,7 @@ async def test_mcq_discards_when_not_four_options() -> None:
     model = AsyncMock()
     model.complete = AsyncMock(return_value=json.dumps([bad]))
     dao = await _make_dao()
-    gen = MCQGenerator(
-        model_client=model, validators=[_passing_validator()], dao=dao
-    )
+    gen = MCQGenerator(model_client=model, validators=[_passing_validator()], dao=dao)
     items = await gen.generate(_concept(), _graph())
     assert items == []
     await dao.close()
@@ -207,9 +197,7 @@ async def test_mcq_returns_empty_on_empty_array() -> None:
     model = AsyncMock()
     model.complete = AsyncMock(return_value="[]")
     dao = await _make_dao()
-    gen = MCQGenerator(
-        model_client=model, validators=[_passing_validator()], dao=dao
-    )
+    gen = MCQGenerator(model_client=model, validators=[_passing_validator()], dao=dao)
     items = await gen.generate(_concept(), _graph())
     assert items == []
     await dao.close()
@@ -243,9 +231,7 @@ async def test_mcq_persists_accepted_items() -> None:
     model = AsyncMock()
     model.complete = AsyncMock(return_value=json.dumps([_mcq()]))
     dao = await _make_dao()
-    gen = MCQGenerator(
-        model_client=model, validators=[_passing_validator()], dao=dao
-    )
+    gen = MCQGenerator(model_client=model, validators=[_passing_validator()], dao=dao)
     items = await gen.generate(_concept(), _graph())
     assert len(items) == 1
 
