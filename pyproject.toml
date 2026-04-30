@@ -112,6 +112,12 @@ addopts = [
 markers = [
     "integration: marks tests that require external services or end-to-end integration paths",
 ]
+filterwarnings = [
+    # testcontainers 4.x uses @wait_container_is_ready and wait_for_logs internally
+    "ignore::DeprecationWarning:testcontainers\\..*",
+    # docling 2.92 emits DeprecationWarnings from internal default field values we cannot override
+    "ignore::DeprecationWarning:docling\\..*",
+]
 
 [tool.coverage.run]
 source = ["src"]
