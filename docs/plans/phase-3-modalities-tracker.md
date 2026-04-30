@@ -23,12 +23,14 @@ prerequisites.
 - [x] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
 - [x] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
 - [x] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
-- [ ] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
+- [x] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
 - [ ] [T4: Timeline Arq integration (extend personalize_concept + generate endpoint)](phase-3/T4-timeline-arq.md)
 - [ ] [T5: Slide generator + validator (per-slide discard, MCQGenerator pattern)](phase-3/T5-slide-generator.md)
 - [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T3 — 2026-04-30**: `TimelineGenerator` filters `lesson_graph.concepts` to those with non-None `temporal_position`, sorts ascending, and emits one `section <title>` + `    <summary>` block per concept wrapped in a `timeline\n` preamble. Returns `TimelineSkipped` (sentinel dataclass) when no concept has `temporal_position` set; T4's Arq branch checks this type and skips persistence. `TimelineResult` is a frozen dataclass with `mermaid: str` and `concept_ids: list[str]` (in sorted order). Chose `temporal_position is not None` guard in the sort key lambda rather than a cast to keep mypy strict-mode happy without `# type: ignore`. `TimelineValidator` uses line-by-line scan: checks `timeline` first token, then iterates `splitlines()` to find `section` lines and validate non-empty titles. Chose concept `summary` (not `title`) as the event text under each section so the Mermaid output has two distinct visual levels (`section` header = concept title, event = summary); source-fidelity constraint preserved — no fabricated date strings.
 
 - **T2 — 2026-04-30**: `personalize_concept` extended with `elif kind == "mind_map"` branch: fetches `LearnerProfile`, constructs `PersonalizationProfile` via Pydantic constructor, calls `MindMapGenerator().generate()`, validates with `run_validators([MindMapValidator()])`, writes `.mmd` bytes via `data_dir.write_asset(..., suffix=".mmd")`, persists DAO record with `concept_id=LESSON_SCOPED_CONCEPT_ID`. `GenerateRequest.kind` Literal in `generate.py` already included `"mind_map"` (committed in prior session). `LESSON_SCOPED_CONCEPT_ID` constant was already defined in `dao.py`. Chose to import `PersonalizationProfile` locally inside the `mind_map` branch to avoid adding a top-level import to `personalize.py` that would require the lesson_graph package at module load time — matches existing pattern for selective imports.
 
