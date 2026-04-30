@@ -160,21 +160,18 @@ was the right template.
 
 ## Carry-overs into phase 3
 
-- **`quiz_id` tracking and Glows/Grows in `AttemptFeedback` are still absent.**
-  `POST /v1/attempts` now returns `suggested_next_concept_id` via the gap
-  detector, but Glows/Grows feedback in the attempts response requires linking
-  an attempt to its parent `SectionQuiz` via a `quiz_id`. No `quiz_id` field
-  exists on `AttemptRecord` or `assessment_items`. This must be addressed in
-  phase 3 if Glows/Grows in the API response is a requirement; if not, the
-  out-of-spec discovery stands as accepted technical debt.
+- **`quiz_id` tracking and Glows/Grows in `AttemptFeedback`** are implemented in
+  phase 3 by T0c-r3 (quiz_id schema change + DAO + SectionQuizGenerator wiring)
+  and T0c-r4 (Glows-Grows in `POST /v1/attempts` response). These are promoted
+  from accepted technical debt to phase-3 deliverables per the spec carry-over
+  allowance.
 
-- **`MnemonicResult` Pydantic type gap** (DAO persistence works; Literal needs
-  widening). The `personalize_concept` Arq job already persists mnemonics via
-  `_VALID_KINDS = {"relevel", "replace", "mnemonic"}` and `save_derived_asset`.
-  What is missing is that `lesson_graph.models.DerivedAsset.kind` (Pydantic)
-  does not include `"mnemonic"` in its Literal, creating a type inconsistency
-  between the Pydantic model and the DAO dataclass. Phase 3 task T0c-r1
-  closes this by adding `"mnemonic"` to the Literal (`SCHEMA_CHANGE=1`).
+- **`MnemonicResult` Pydantic type gap** — closed by phase-3 T0c-r1 (`SCHEMA_CHANGE=1`).
+  The `personalize_concept` Arq job already persists mnemonics via the DAO
+  (`_VALID_KINDS` includes `"mnemonic"`, `save_derived_asset` is called). T0c-r1
+  widened `lesson_graph.models.DerivedAsset.kind` to include `"mnemonic"` in the
+  Pydantic Literal, eliminating the type inconsistency between the domain model
+  and the DAO dataclass.
 
 - **`POST /lessons/{lesson_id}/generate` only enqueues; it does not poll or
   stream.** The GET polling endpoint returns `pending`, `complete`, or

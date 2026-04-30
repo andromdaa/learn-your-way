@@ -249,7 +249,14 @@ def test_derived_asset_rejects_audio_lesson_kind() -> None:
 
 
 def test_derived_asset_accepts_all_in_scope_kinds() -> None:
-    for kind in ("immersive_text", "slides", "mind_map", "timeline", "image", "mnemonic"):
+    for kind in (
+        "immersive_text",
+        "slides",
+        "mind_map",
+        "timeline",
+        "image",
+        "mnemonic",
+    ):
         asset = DerivedAsset(
             id=f"a-{kind}",
             kind=kind,

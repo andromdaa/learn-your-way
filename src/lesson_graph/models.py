@@ -144,6 +144,7 @@ class DerivedAsset(BaseModel):
         "mind_map",
         "timeline",
         "image",
+        "mnemonic",
     ]
     based_on_concepts: list[str] = Field(min_length=1)
     personalization_profile: PersonalizationProfile
