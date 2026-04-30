@@ -9,6 +9,7 @@ from typing import Any
 import aiosqlite
 
 from lesson_graph import ConceptNode, LessonGraph, SourceSpan
+from lyw_core.profiles.models import LearnerProfile
 
 
 class Database:
@@ -165,3 +166,57 @@ class Database:
             source_id=lesson_row["source_id"],
             concepts=concepts,
         )
+
+    # ------------------------------------------------------------------
+    # Learner profiles
+    # ------------------------------------------------------------------
+
+    async def add_profile(self, profile: LearnerProfile) -> None:
+        """Upsert a learner profile by id."""
+        await self._conn.execute(
+            """
+            INSERT INTO profiles (id, grade_level, interests, goals)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                grade_level = excluded.grade_level,
+                interests   = excluded.interests,
+                goals       = excluded.goals
+            """,
+            (
+                profile.id,
+                profile.grade_level,
+                json.dumps(profile.interests),
+                json.dumps(profile.goals),
+            ),
+        )
+        await self._conn.commit()
+
+    async def get_profile(self, profile_id: str) -> LearnerProfile | None:
+        async with self._conn.execute(
+            "SELECT id, grade_level, interests, goals FROM profiles WHERE id = ?",
+            (profile_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return LearnerProfile(
+            id=row["id"],
+            grade_level=row["grade_level"],
+            interests=json.loads(row["interests"]),
+            goals=json.loads(row["goals"]),
+        )
+
+    async def list_profiles(self) -> list[LearnerProfile]:
+        async with self._conn.execute(
+            "SELECT id, grade_level, interests, goals FROM profiles ORDER BY created_at"
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            LearnerProfile(
+                id=row["id"],
+                grade_level=row["grade_level"],
+                interests=json.loads(row["interests"]),
+                goals=json.loads(row["goals"]),
+            )
+            for row in rows
+        ]

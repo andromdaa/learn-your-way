@@ -40,3 +40,11 @@ CREATE TABLE IF NOT EXISTS source_spans (
 CREATE INDEX IF NOT EXISTS idx_lessons_source_id ON lessons(source_id);
 CREATE INDEX IF NOT EXISTS idx_concepts_lesson_id ON concepts(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_source_spans_concept_id ON source_spans(concept_id);
+
+CREATE TABLE IF NOT EXISTS profiles (
+    id          TEXT PRIMARY KEY,
+    grade_level TEXT NOT NULL,
+    interests   TEXT NOT NULL DEFAULT '[]',
+    goals       TEXT NOT NULL DEFAULT '[]',
+    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
