@@ -185,3 +185,58 @@ def test_openapi_routes_present(client: TestClient) -> None:
     assert paths["/lessons/{lesson_id}"]["get"]["operationId"] == "getLesson"
     servers = schema.get("servers", [])
     assert any("v1" in s["url"] for s in servers)
+
+
+# ---------------------------------------------------------------------------
+# POST /profiles
+# ---------------------------------------------------------------------------
+
+
+def test_post_profiles_returns_200(client: TestClient) -> None:
+    response = client.post(
+        "/profiles",
+        json={"grade_level": "8", "interests": ["football"], "goals": ["pass exam"]},
+    )
+    assert response.status_code == 200
+
+
+def test_post_profiles_returns_saved_profile(client: TestClient) -> None:
+    response = client.post(
+        "/profiles",
+        json={"grade_level": "9", "interests": ["chess"], "goals": ["improve ranking"]},
+    )
+    body = response.json()
+    assert body["grade_level"] == "9"
+    assert body["interests"] == ["chess"]
+    assert body["goals"] == ["improve ranking"]
+    assert "id" in body
+
+
+def test_post_profiles_missing_grade_level_returns_422(client: TestClient) -> None:
+    response = client.post(
+        "/profiles",
+        json={"interests": ["chess"], "goals": ["improve"]},
+    )
+    assert response.status_code == 422
+
+
+def test_post_profiles_empty_grade_level_returns_422(client: TestClient) -> None:
+    response = client.post(
+        "/profiles",
+        json={"grade_level": "", "interests": [], "goals": []},
+    )
+    assert response.status_code == 422
+
+
+def test_post_profiles_duplicate_upserts_cleanly(client: TestClient) -> None:
+    payload = {"grade_level": "7", "interests": ["art"], "goals": ["learn basics"]}
+    r1 = client.post("/profiles", json=payload)
+    r2 = client.post("/profiles", json=payload)
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+
+
+def test_post_profiles_in_openapi_schema(client: TestClient) -> None:
+    schema = client.get("/openapi.json").json()
+    assert "/profiles" in schema["paths"]
+    assert "post" in schema["paths"]["/profiles"]
