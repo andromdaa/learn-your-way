@@ -352,3 +352,83 @@ async def test_get_lesson_id_by_concept_id_missing_returns_none() -> None:
     result = await db.get_lesson_id_by_concept_id("no-such-concept")
     assert result is None
     await db.close()
+
+
+# ---------------------------------------------------------------------------
+# quiz_id tracking (T0c-r3)
+# ---------------------------------------------------------------------------
+
+
+def _item_with_quiz_id(
+    id: str, concept_id: str, quiz_id: str | None = None
+) -> AssessmentItem:
+    return AssessmentItem(
+        id=id,
+        kind="mcq",
+        prompt=f"Question for {concept_id}",
+        rationale="Some rationale",
+        source_spans=[_span()],
+        difficulty="easy",
+        concept_id=concept_id,
+        correct_answer="A",
+        quiz_id=quiz_id,
+    )
+
+
+async def test_add_assessment_item_persists_quiz_id() -> None:
+    """add_assessment_item persists quiz_id; get_item_by_id reads it back."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    graph = _graph("g1", "src-1", [_concept("c1")])
+    await db.upsert_lesson_graph(graph)
+
+    item = _item_with_quiz_id("item-1", "c1", quiz_id="quiz-abc")
+    await db.add_assessment_item(item)
+
+    fetched = await db.get_item_by_id("item-1")
+    assert fetched is not None
+    assert fetched.quiz_id == "quiz-abc"
+    await db.close()
+
+
+async def test_add_assessment_item_null_quiz_id_round_trips() -> None:
+    """add_assessment_item with quiz_id=None; get_item_by_id returns None."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    graph = _graph("g1", "src-1", [_concept("c1")])
+    await db.upsert_lesson_graph(graph)
+
+    item = _item_with_quiz_id("item-2", "c1", quiz_id=None)
+    await db.add_assessment_item(item)
+
+    fetched = await db.get_item_by_id("item-2")
+    assert fetched is not None
+    assert fetched.quiz_id is None
+    await db.close()
+
+
+async def test_get_items_by_quiz_id_returns_matching_items() -> None:
+    """get_items_by_quiz_id returns only items with that quiz_id."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    graph = _graph("g1", "src-1", [_concept("c1")])
+    await db.upsert_lesson_graph(graph)
+
+    await db.add_assessment_item(_item_with_quiz_id("item-1", "c1", quiz_id="quiz-1"))
+    await db.add_assessment_item(_item_with_quiz_id("item-2", "c1", quiz_id="quiz-1"))
+    await db.add_assessment_item(_item_with_quiz_id("item-3", "c1", quiz_id="quiz-2"))
+    await db.add_assessment_item(_item_with_quiz_id("item-4", "c1", quiz_id=None))
+
+    result = await db.get_items_by_quiz_id("quiz-1")
+    ids = {i.id for i in result}
+    assert ids == {"item-1", "item-2"}
+    assert all(i.quiz_id == "quiz-1" for i in result)
+    await db.close()
+
+
+async def test_get_items_by_quiz_id_empty_for_unknown() -> None:
+    """get_items_by_quiz_id returns [] for a quiz_id not in the DB."""
+    db = await Database.connect(":memory:")
+    result = await db.get_items_by_quiz_id("no-such-quiz")
+    assert result == []
+    await db.close()

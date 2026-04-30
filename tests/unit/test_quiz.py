@@ -205,3 +205,57 @@ async def test_glows_grows_non_string_values_returns_empty() -> None:
     sqg = _make_sqg(MagicMock(spec=MCQGenerator), model_client)
     result = await sqg.generate_glows_grows([], [])
     assert result == GlowsGrows(glows="", grows="")
+
+
+# ---------------------------------------------------------------------------
+# quiz_id threading (T0c-r3)
+# ---------------------------------------------------------------------------
+
+
+async def test_section_quiz_generate_threads_quiz_id_to_all_items() -> None:
+    """When quiz_id is supplied, all returned items carry it."""
+    concept = _concept("c1", "Photosynthesis")
+    graph = LessonGraph(id="g1", source_id="doc-1", concepts=[concept])
+
+    items_without_quiz_id = [
+        _assessment_item("i1", "c1", "Q1"),
+        _assessment_item("i2", "c1", "Q2"),
+    ]
+
+    async def fake_generate(
+        concept: ConceptNode, lg: LessonGraph, *, quiz_id: str | None = None
+    ) -> list[AssessmentItem]:
+        # Simulate MCQGenerator stamping quiz_id onto returned items
+        return [item.model_copy(update={"quiz_id": quiz_id}) for item in items_without_quiz_id]
+
+    mcq_gen = MagicMock(spec=MCQGenerator)
+    mcq_gen.generate = AsyncMock(side_effect=fake_generate)
+
+    sqg = _make_sqg(mcq_gen)
+    items = await sqg.generate([concept], graph, quiz_id="quiz-xyz")
+
+    assert all(item.quiz_id == "quiz-xyz" for item in items)
+    # verify quiz_id was forwarded to MCQGenerator
+    call_kwargs = mcq_gen.generate.call_args_list[0].kwargs
+    assert call_kwargs.get("quiz_id") == "quiz-xyz"
+
+
+async def test_section_quiz_generate_without_quiz_id_preserves_none() -> None:
+    """When quiz_id is not supplied (default None), items retain quiz_id=None."""
+    concept = _concept("c1", "Photosynthesis")
+    graph = LessonGraph(id="g1", source_id="doc-1", concepts=[concept])
+
+    async def fake_generate(
+        concept: ConceptNode, lg: LessonGraph, *, quiz_id: str | None = None
+    ) -> list[AssessmentItem]:
+        return [_assessment_item("i1", "c1", "Q1")]
+
+    mcq_gen = MagicMock(spec=MCQGenerator)
+    mcq_gen.generate = AsyncMock(side_effect=fake_generate)
+
+    sqg = _make_sqg(mcq_gen)
+    items = await sqg.generate([concept], graph)
+
+    assert all(item.quiz_id is None for item in items)
+    call_kwargs = mcq_gen.generate.call_args_list[0].kwargs
+    assert call_kwargs.get("quiz_id") is None
