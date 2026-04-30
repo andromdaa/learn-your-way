@@ -15,7 +15,11 @@ from lyw_core.validators.base import ValidationError, ValidationResult
 
 def _span(char_start: int = 0, char_end: int = 500) -> SourceSpan:
     return SourceSpan(
-        doc_id="doc-1", page_start=1, page_end=2, char_start=char_start, char_end=char_end
+        doc_id="doc-1",
+        page_start=1,
+        page_end=2,
+        char_start=char_start,
+        char_end=char_end,
     )
 
 
@@ -43,7 +47,9 @@ def _graph(concept: ConceptNode | None = None) -> LessonGraph:
 
 async def test_mnemonic_generate_returns_result(snapshot: SnapshotAssertion) -> None:
     model = AsyncMock()
-    model.complete = AsyncMock(return_value="Plants Wildly Gobble Carbon Oxygen (PWGCO)")
+    model.complete = AsyncMock(
+        return_value="Plants Wildly Gobble Carbon Oxygen (PWGCO)"
+    )
 
     validator = MagicMock()
     validator.validate = MagicMock(return_value=ValidationResult(passed=True))
