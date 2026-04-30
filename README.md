@@ -48,7 +48,7 @@ uv run mypy                 # type-check (strict)
 uv run pytest --cov         # tests with coverage
 ```
 
-The schema tests in `tests/test_lesson_graph.py` exercise the
+The schema tests in `tests/unit/test_lesson_graph.py` exercise the
 invariants documented in `docs/02-data-model.md`.
 
 CI runs ruff, mypy, pytest, and a coverage gate on every push and

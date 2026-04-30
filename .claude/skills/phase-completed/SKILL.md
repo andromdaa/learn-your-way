@@ -1,6 +1,6 @@
 ---
 name: phase-completed
-description: End-to-end phase wrap-up orchestrator. Use when the user says "phase N is done", "wrap up phase N", "close phase N", or "/phase-completed". Runs house cleaning, then spawns sub-agents for phase-retrospective, update-agents-md, reconcile-spec, and decompose-spec in the correct order. Auto-saves each artifact and presents one consolidated diff summary at the end for user review.
+description: End-to-end phase wrap-up orchestrator. Use when the user says "phase N is done", "wrap up phase N", "close phase N", or "/phase-completed". Runs house cleaning, then spawns sub-agents for phase-retrospective, update-agents-md, reconcile-spec, and decompose-spec, followed by a final alignment audit that fact-checks every cross-reference against the actual code. Auto-saves each artifact and presents one consolidated diff summary at the end for user review.
 ---
 
 # Wrap up a completed phase
@@ -180,16 +180,106 @@ planning begins.
 )
 ```
 
+### Step 4 — Alignment audit (sequential; depends on steps 1–3)
+
+Sub-agents work in isolation, so each can introduce drift: a reconciled
+spec may cite an ADR claim that does not actually appear in the ADR; a
+decomposed task may reference a test path that does not exist; older docs
+may carry stale enumerations or paths that the new artifacts now contradict.
+This step fact-checks every cross-reference in the **edited and adjacent**
+files against the actual code state, and applies in-place corrections.
+
+```
+Agent(
+  subagent_type: "general-purpose",
+  prompt: """
+Final alignment audit for the phase <N> wrap-up. The phase-retrospective,
+update-agents-md, reconcile-spec, and decompose-spec sub-agents have all
+run and saved their artifacts. Your job is to find and fix cross-reference
+drift before the user commits.
+
+Scope:
+- Every file currently modified or untracked under the repo (per
+  `git status --short`), plus any file those edits cite by path
+  (AGENTS.md, README.md, docs/02-data-model.md, docs/adr/*.md,
+  specs/phase-*.md, docs/plans/phase-*/**).
+
+Checks (apply each across all in-scope files):
+
+1. **Path references resolve.** Every `src/...`, `tests/...`, `docs/...`,
+   `specs/...`, `.claude/...` path mentioned in prose, code blocks, or
+   acceptance commands must either (a) exist on disk, or (b) be explicitly
+   scoped to a not-yet-shipped task in the phase tracker (e.g. "T0c-r1
+   creates this file"). If neither, fix the path to the correct
+   location.
+   - Common drift: `tests/test_lesson_graph.py` vs.
+     `tests/unit/test_lesson_graph.py`. Verify by `find tests -name
+     'test_*.py'`.
+
+2. **ADR-cited claims match the ADR.** For every "ADR-NNNN says X" or
+   "per ADR-NNNN" reference, open the ADR and confirm X is actually
+   stated there. Common drift: hash-key descriptions, kind enumerations,
+   layering claims that the cited ADR does not in fact specify.
+
+3. **Pydantic Literal enumerations match `src/lesson_graph/models.py`.**
+   Any prose listing the values of a Literal (e.g., `DerivedAsset.kind`,
+   `AssessmentItem.kind`) must match the actual Literal exactly, OR be
+   explicitly scoped to a task that widens the Literal (with
+   `SCHEMA_CHANGE=1` flagged in that task's acceptance).
+
+4. **Function / constant references.** Names like
+   `LESSON_SCOPED_CONCEPT_ID`, `save_derived_asset`, `run_validators`
+   must either exist in the codebase (`grep -rn 'name' src/`) or be
+   scoped to a creating task. If a name is used by two task plans and
+   created by neither, the audit must flag it.
+
+5. **Cross-document consistency.** AGENTS.md, the in-flight spec, the
+   retrospective, and the tracker decisions section must agree on
+   load-bearing claims (storage layout, sentinel values, validator
+   discard-vs-raise rules, coverage gate). If two documents contradict
+   each other, the source of truth is, in order: actual code → ADRs →
+   spec → AGENTS.md → retrospective → tracker decisions. Fix the lower-
+   priority document to match the higher one.
+
+6. **Stale phase-N references in phase-(N+1) docs.** The reconciled
+   spec and the new task plans should not refer to "phase 2 will…" or
+   "carry-over to phase 2" if phase 2 just shipped. Promote to past
+   tense and link to the retrospective.
+
+For each finding: apply the fix in-place if it is a local edit. If a
+finding requires a code change (e.g., a referenced function genuinely
+does not exist and no task creates it), do **not** edit code — flag it
+under "Unresolved" so the user can decide whether to add a task or
+remove the reference.
+
+Return:
+- List of fixes applied (file:line, before → after, one line each).
+- List of unresolved findings (file:line, claim, suggested resolution).
+- Empty lists if nothing needed changing — say so explicitly.
+
+Do not run pre-commit or commit. The orchestrator runs pre-commit at the
+end.
+"""
+)
+```
+
+After the audit returns, run `uv run pre-commit run --all-files` once.
+Most findings should be Markdown-only edits that pre-commit hooks
+auto-fix or pass through. Surface any failures.
+
 ## Consolidated diff summary
 
 After all sub-agents return, produce one report for the user:
 
 1. **Files created or modified** — list every path touched.
 2. **`git diff --stat`** — run and embed the output.
-3. **Open questions** — collect every open question returned by any
+3. **Alignment audit findings** — list every fix the audit applied
+   (file:line, before → after) plus every unresolved finding it
+   surfaced. If both are empty, say "audit passed clean."
+4. **Open questions** — collect every open question returned by any
    sub-agent (especially decompose-spec, which routinely surfaces
    questions before the tracker is finalized).
-4. **Recommended next step.** — "Review each artifact in your editor.
+5. **Recommended next step.** — "Review each artifact in your editor.
    When satisfied, commit the wrap-up in one commit:
    `git add docs/ specs/ AGENTS.md && git commit -m 'chore: close phase <N>, open phase <N+1>'`."
 
@@ -216,3 +306,6 @@ Do not commit. The user commits.
 - `.claude/skills/update-agents-md/SKILL.md`
 - `.claude/skills/reconcile-spec/SKILL.md`
 - `.claude/skills/decompose-spec/SKILL.md`
+- The alignment audit (Step 4) has no standalone skill file; its
+  instructions live inline in this orchestrator because it operates on
+  the union of the prior steps' outputs.
