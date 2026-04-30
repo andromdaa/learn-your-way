@@ -24,7 +24,7 @@ prerequisites.
 - [x] [T3: Validator framework — ValidationResult, Validator Protocol, gating (ADR-0011)](phase-2/T3-validator-framework.md)
 - [x] [T4: Source faithfulness + clarity of learning intentions validators](phase-2/T4-item-validators.md)
 - [x] [T5: Re-leveling generator (immersive text, snapshot tests)](phase-2/T5-relevel-generator.md)
-- [ ] [T6: Adaptability validator (readability scoring)](phase-2/T6-adaptability-validator.md)
+- [x] [T6: Adaptability validator (readability scoring)](phase-2/T6-adaptability-validator.md)
 - [ ] [T7: Example replacement generator (snapshot tests)](phase-2/T7-example-replacement.md)
 - [ ] [T8: Embedded MCQ generator + assessment_items persistence](phase-2/T8-mcq-generator.md)
 - [ ] [T9: Section quiz generator + Glows/Grows feedback (snapshot tests)](phase-2/T9-section-quiz.md)
@@ -43,6 +43,7 @@ prerequisites.
 - 2026-04-30 T3: Used Protocol structural typing over ABC inheritance for Validator[T]. Rationale: concrete validators (T4, T6, T10) need not inherit from a base class; structural typing keeps them independently testable. run_validators uses collect-all semantics (not fail-fast) so generators see the complete failure set in one call.
 - 2026-04-30 T4: ItemValidationPayload defined in faithfulness.py (imported by clarity.py). Rationale: no additional types.py file needed; clarity is a consumer of faithfulness's payload definition, keeping the module count within the task's stated file list. span_is_contained uses both page-overlap and character-containment checks as specified in the risk notes.
 - 2026-04-30 T5: Faithfulness gating is performed by constructing a synthetic AssessmentItem (kind=short_answer, source_spans=[original_span]) and running SourceFaithfulnessValidator on it. Rationale: reuses the T4 validator without adding a new validator type; the check verifies the replacement span is valid within the lesson graph. ReLeveler.relevel() is async to match ModelClient.complete().
+- 2026-04-30 T6: Pass condition is strictly closer (rel_dist < orig_dist) OR already at target (orig_dist == 0). Rationale: equal-distance counts as failure because the prompt asked to re-level but produced the same relative distance — that signals the model didn't improve the text. textstat.flesch_kincaid_grade is called twice (original then releveled) to allow deterministic mocking via side_effect in tests.
 
 ## Open Questions
 
