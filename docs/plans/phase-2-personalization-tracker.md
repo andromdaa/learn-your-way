@@ -31,7 +31,7 @@ prerequisites.
 - [x] [T10: Coverage, emphasis, active learning section-quality validators](phase-2/T10-section-quality-validators.md)
 - [x] [T11: Mnemonic generator (snapshot tests)](phase-2/T11-mnemonic-generator.md)
 - [x] [T12: Attempts SQLite table, attempts DAO, gap detector (TDD-strict)](phase-2/T12-gap-detector.md)
-- [ ] [T13: POST /attempts + POST /recommendations/next endpoints](phase-2/T13-assessment-api.md)
+- [x] [T13: POST /attempts + POST /recommendations/next endpoints](phase-2/T13-assessment-api.md)
 
 ## Decisions Made
 
@@ -50,6 +50,7 @@ prerequisites.
 - 2026-04-30 T8: MCQGenerator takes validators as Sequence[Validator[ItemValidationPayload]] and iterates them manually (not run_validators) so items that fail are discarded rather than raising ValidationError. assessment_items.source_spans stored as JSON array (same serialisation pattern as existing source_spans table). ORDER BY rowid used for insertion-order retrieval without a created_at column.
 - 2026-04-30 T7: original_span is always concept.source_spans[0] for all replacements. Rationale: the model operates on text, not character offsets, so we cannot derive a more precise span from model output; using the first source span is the correct conservative anchor that keeps all replacements traceable to the source document. Faithfulness failures are discarded with structlog warning rather than raised so a partial model response does not abort the whole personalization run.
 - 2026-04-30 T12: AttemptRecord is a plain dataclass (not Pydantic) to match the lightweight pattern of other DAO return types. GapDetector.next_concept takes dao as a parameter (not injected in __init__) so callers can reuse one detector across multiple DAO instances. Gap algorithm uses most-recent incorrect attempt (last in insertion order) to surface the freshest failure signal; prerequisite walk is index-order per ADR-0012.
+- 2026-04-30 T13: Items with correct_answer=None return correct=False + rationale="Manual evaluation required" rather than raising a 5xx. Rationale: non-MCQ items cannot be machine-graded; the endpoint must remain safe to call for all item kinds, and surfacing the manual-eval signal lets the caller decide how to handle it. suggested_next_concept_id in AttemptFeedback is always None (Glows/Grows integration deferred, noted as out-of-spec follow-on per task spec). GapDetector is instantiated per request (stateless by design, per T12 decision).
 
 ## Open Questions
 
@@ -57,8 +58,10 @@ _(empty — record blockers and ambiguities here)_
 
 ## Out-of-Spec Discoveries
 
-_(empty — record anything found during implementation that conflicts
-with or extends `specs/phase-2-personalization.md`)_
+- T13: `suggested_next_concept_id` in `AttemptFeedback` is always `None`
+  because `quiz_id` tracking is not yet implemented. Glows/Grows
+  integration in the attempts response is a follow-on task for a later
+  phase.
 
 ## Spec Coverage
 
