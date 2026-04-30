@@ -80,7 +80,9 @@ class TimelineGenerator:
         if not positioned:
             return TimelineSkipped()
 
-        positioned.sort(key=lambda c: c.temporal_position if c.temporal_position is not None else 0)
+        positioned.sort(
+            key=lambda c: c.temporal_position if c.temporal_position is not None else 0
+        )
 
         lines: list[str] = ["timeline"]
         concept_ids: list[str] = []
