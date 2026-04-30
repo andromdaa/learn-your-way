@@ -7,8 +7,9 @@ Compact index for Phase 3 task work. Detailed task files live in
 ## Status
 
 Not started. Phase 2 acceptance criteria closed 2026-04-30; phase 3
-opens now. T0c-r tasks address phase-2 carry-overs before any feature
-task opens.
+opens now. Four T0c-r tasks address phase-2 carry-overs before any feature
+task opens: T0c-r1 (mnemonic Literal), T0c-r2 (temporal_position schema),
+T0c-r3 (quiz_id schema + DAO), T0c-r4 (Glows-Grows in /attempts).
 
 Each T-task is intended to be one branch, one PR, one agent session,
 around 400 LoC, at most six files touched, no later T-numbers as
@@ -16,8 +17,10 @@ prerequisites.
 
 ## Tasks
 
-- [ ] [T0c-r1: Accept quiz_id/Glows-Grows debt; record MnemonicResult persistence decision](phase-3/T0c-r1-carryover-debt.md)
+- [ ] [T0c-r1: Add "mnemonic" to DerivedAsset.kind Pydantic Literal (SCHEMA_CHANGE=1)](phase-3/T0c-r1-carryover-debt.md)
 - [ ] [T0c-r2: temporal_position schema change on ConceptNode (ADR-0014)](phase-3/T0c-r2-temporal-position-schema.md)
+- [ ] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
+- [ ] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
 - [ ] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
 - [ ] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
 - [ ] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
@@ -50,6 +53,11 @@ prerequisites.
   is the bridge. No refactor; layering documented in AGENTS.md and spec.
 - **C3 — ADR-0013 kind enumeration removed**: stale `"relevel"|"replace"|"mnemonic"`
   enumeration replaced with a reference to `DerivedAsset.kind` Literal.
+- **Q5 — Glows-Grows in AttemptFeedback**: promoted from accepted technical
+  debt to phase-3 deliverable. The spec carry-over note authorises this:
+  "must be resolved if phase 3 adds any endpoint that surfaces Glows/Grows
+  data." T0c-r3 adds the `quiz_id` schema foundation; T0c-r4 wires
+  Glows-Grows into `POST /v1/attempts`.
 
 ## Open Questions
 
@@ -72,3 +80,4 @@ with either "reconciled in PR #N" or "deferred to phase 4".)_
 | Modality-specific validators as `Validator[T]` Protocols (ADR-0011); single-output raises, slides discard per-item | T1, T3, T5 |
 | Wire three generators into `personalize_concept` Arq job; extend `POST /lessons/{id}/generate` | T2, T4, T6 |
 | Asset retrieval by ID via existing `get_derived_asset` DAO | T6 |
+| Carry-over: `quiz_id` tracking + Glows-Grows in `AttemptFeedback` (spec carry-over allowance) | T0c-r3, T0c-r4 |

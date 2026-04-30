@@ -16,9 +16,15 @@ The `GenerateRequest.kind` Literal in `generate.py` expands from `Literal["relev
 
 ## Files created or modified
 
+- `src/lyw_core/db/dao.py` — **modify**: define
+  `LESSON_SCOPED_CONCEPT_ID = "__lesson__"` as a module-level constant near
+  the existing `DerivedAsset` dataclass. This is the sentinel value required
+  by `derived_assets.concept_id TEXT NOT NULL` for lesson-scoped generator
+  kinds (`mind_map`, `timeline`). T4 reuses this constant without redefining
+  it.
 - `src/lyw_core/worker/jobs/personalize.py` — **modify**: add `"mind_map"` to `_VALID_KINDS`; add an `elif kind == "mind_map":` branch that instantiates `MindMapGenerator`, runs the generator, validates via `MindMapValidator` + `run_validators`, and returns the Mermaid string as `content`.
 - `src/lyw_core/api/routes/generate.py` — **modify**: expand `GenerateRequest.kind` Literal to include `"mind_map"`.
-- `tests/unit/test_mindmap_arq.py` — **create**: unit tests for the new `mind_map` branch of `personalize_concept`. Mock `db`, `data_dir`, and `MindMapGenerator.generate` (synchronous fixture output). Confirm the asset is written and the DAO `save_derived_asset` is called. Confirm a `ValidationError` from the validator causes the job to raise (not silently swallow).
+- `tests/unit/test_mindmap_arq.py` — **create**: unit tests for the new `mind_map` branch of `personalize_concept`. Mock `db`, `data_dir`, and `MindMapGenerator.generate` (synchronous fixture output). Confirm the asset is written and the DAO `save_derived_asset` is called. Confirm a `ValidationError` from the validator causes the job to raise (not silently swallow). Also assert `from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID; assert LESSON_SCOPED_CONCEPT_ID == "__lesson__"`.
 - `tests/unit/test_api_generate.py` — **modify**: add a test that `POST /lessons/{lesson_id}/generate` with `kind="mind_map"` returns 202 and a `job_id`, while a concurrent `GET /v1/attempts` (or another interactive route) responds without waiting for the job to complete. Use `pytest-asyncio` with a mocked Arq queue.
 
 ## Depends on
