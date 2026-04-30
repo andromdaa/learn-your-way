@@ -1,0 +1,10 @@
+# serializer version: 1
+# name: test_snapshot_deck_structure
+  dict({
+    'body': 'Mitosis is the process of cell division.',
+    'concept_id': 'c1',
+    'has_source_spans': True,
+    'speaker_notes': 'Explain each phase clearly.',
+    'title': 'Mitosis Overview',
+  })
+# ---
