@@ -21,7 +21,7 @@ prerequisites.
 - [x] [T0c-r3: AssessmentItem.correct_answer + bloom_level + ConceptNode.prerequisites clarification (ADR-0012)](phase-2/T0c-r3-assessment-item-fields.md)
 - [x] [T1: LearnerProfile model, profiles SQLite table, profile DAO](phase-2/T1-learner-profile.md)
 - [x] [T2: POST /profiles endpoint](phase-2/T2-profiles-endpoint.md)
-- [ ] [T3: Validator framework — ValidationResult, Validator Protocol, gating (ADR-0011)](phase-2/T3-validator-framework.md)
+- [x] [T3: Validator framework — ValidationResult, Validator Protocol, gating (ADR-0011)](phase-2/T3-validator-framework.md)
 - [ ] [T4: Source faithfulness + clarity of learning intentions validators](phase-2/T4-item-validators.md)
 - [ ] [T5: Re-leveling generator (immersive text, snapshot tests)](phase-2/T5-relevel-generator.md)
 - [ ] [T6: Adaptability validator (readability scoring)](phase-2/T6-adaptability-validator.md)
@@ -40,6 +40,7 @@ prerequisites.
 - 2026-04-30 T0c-r2: concept_id stored as a denormalised field on AssessmentItem rather than derived via source_span join. Rationale: gap detector queries it on every submission (O(1) vs join); runtime resolution of concept_id to a ConceptNode is the clarity validator's job (T4), not a model invariant.
 - 2026-04-30 T1: LearnerProfile.id is a required caller-supplied string (not auto-generated in the model). Rationale: T2 (POST /profiles) will generate the UUID at the API layer; keeping id required keeps the model simple and lets tests control ids explicitly.
 - 2026-04-30 T2: grade_level validated in CreateProfileRequest (not deferred to LearnerProfile construction). Rationale: validation errors in the handler body return 500; FastAPI only converts pydantic errors raised during request parsing to 422. Duplicating the validator on the request model keeps HTTP semantics correct.
+- 2026-04-30 T3: Used Protocol structural typing over ABC inheritance for Validator[T]. Rationale: concrete validators (T4, T6, T10) need not inherit from a base class; structural typing keeps them independently testable. run_validators uses collect-all semantics (not fail-fast) so generators see the complete failure set in one call.
 
 ## Open Questions
 
