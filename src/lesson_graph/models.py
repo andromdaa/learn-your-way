@@ -17,9 +17,9 @@ round-trip test at ingest time (every character in every span must
 resolve back to the source text).
 """
 
-from typing import Any, Literal, Self
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SourceSpan(BaseModel):
@@ -45,6 +45,37 @@ class SourceSpan(BaseModel):
         if self.char_end < self.char_start:
             raise ValueError("char_end must be >= char_start")
         return self
+
+
+class ReplacementRecord(BaseModel):
+    """One personalization replacement: original span, new text, and why.
+
+    Used by personalization generators (T5, T7) to record every change
+    made to source content so diffs remain auditable.
+    """
+
+    original_span: SourceSpan
+    replacement_text: str
+    justification: str
+
+    @field_validator("justification")
+    @classmethod
+    def _justification_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("justification must not be empty")
+        return v
+
+
+class PersonalizationProfile(BaseModel):
+    """Typed profile that replaces the dict[str, Any] placeholder.
+
+    Carries learner attributes plus a complete audit trail of every
+    replacement made by a personalization generator. ADR-0009.
+    """
+
+    grade_level: str
+    interests: list[str]
+    replacements: list[ReplacementRecord] = Field(default_factory=list)
 
 
 class ConceptNode(BaseModel):
@@ -107,8 +138,7 @@ class DerivedAsset(BaseModel):
         "image",
     ]
     based_on_concepts: list[str] = Field(min_length=1)
-    # TODO(phase-2): replace with TypedDict per docs/02-data-model.md
-    personalization_profile: dict[str, Any]
+    personalization_profile: PersonalizationProfile
     uri: str | None = None
 
 
