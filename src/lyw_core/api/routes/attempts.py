@@ -81,11 +81,25 @@ async def record_attempt(
         correct=correct,
     )
 
+    suggested_next_concept_id: str | None = None
+    lesson_id = await db.get_lesson_id_by_concept_id(item.concept_id)
+    if lesson_id is not None:
+        graph = await db.get_lesson_graph(lesson_id)
+        if graph is not None:
+            detector = GapDetector()
+            next_node = await detector.next_concept(
+                profile_id=body.profile_id,
+                lesson_graph=graph,
+                dao=db,
+            )
+            if next_node is not None:
+                suggested_next_concept_id = next_node.id
+
     return AttemptFeedback(
         correct=correct,
         rationale=rationale,
         source_spans=item.source_spans,
-        suggested_next_concept_id=None,
+        suggested_next_concept_id=suggested_next_concept_id,
     )
 
 

@@ -331,3 +331,24 @@ async def test_get_item_by_id_missing_returns_none() -> None:
     result = await db.get_item_by_id("no-such-item")
     assert result is None
     await db.close()
+
+
+async def test_get_lesson_id_by_concept_id_returns_lesson_id() -> None:
+    """get_lesson_id_by_concept_id maps a concept back to its parent lesson."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+    concept = _concept("c1")
+    graph = _graph("g1", "src-1", [concept])
+    await db.upsert_lesson_graph(graph)
+
+    lesson_id = await db.get_lesson_id_by_concept_id("c1")
+    assert lesson_id == "g1"
+    await db.close()
+
+
+async def test_get_lesson_id_by_concept_id_missing_returns_none() -> None:
+    """get_lesson_id_by_concept_id returns None for an unknown concept id."""
+    db = await Database.connect(":memory:")
+    result = await db.get_lesson_id_by_concept_id("no-such-concept")
+    assert result is None
+    await db.close()
