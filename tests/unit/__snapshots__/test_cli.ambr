@@ -10,7 +10,7 @@
         Objective : Understand Methods
         Spans     : p1-p1  chars 31-57
         Prereqs   : 01e6b44ba385
-  
+
   '''
 # ---
 # name: test_run_inspect_stdout_snapshot
@@ -24,6 +24,6 @@
         Objective : Understand Introduction
         Spans     : p1-p1  chars 0-30
         Prereqs   : (none)
-  
+
   '''
 # ---
