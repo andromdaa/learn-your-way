@@ -263,8 +263,6 @@ def _mcq_item(correct_answer: str | None = "Paris") -> AssessmentItem:
 
 def test_post_attempts_returns_200_correct(client: TestClient) -> None:
     item = _mcq_item("Paris")
-    client.app.dependency_overrides[get_db].return_value = None  # type: ignore[attr-defined]
-    # Use a dedicated mock for this test
     mock_db = AsyncMock()
     mock_db.get_item_by_id.return_value = item
     mock_db.record_attempt.return_value = None
