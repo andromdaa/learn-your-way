@@ -24,11 +24,13 @@ prerequisites.
 - [x] [T1: Mind-map generator + validator (Mermaid, single-output, raises on failure)](phase-3/T1-mindmap-generator.md)
 - [x] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
 - [x] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
-- [ ] [T4: Timeline Arq integration (extend personalize_concept + generate endpoint)](phase-3/T4-timeline-arq.md)
+- [x] [T4: Timeline Arq integration (extend personalize_concept + generate endpoint)](phase-3/T4-timeline-arq.md)
 - [ ] [T5: Slide generator + validator (per-slide discard, MCQGenerator pattern)](phase-3/T5-slide-generator.md)
 - [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T4 — 2026-04-30**: `personalize_concept` extended with `elif kind == "timeline"` branch. Skip path: `isinstance(tl_result, TimelineSkipped)` guard returns `{"skipped": True, "reason": "no_temporal_metadata"}` immediately without calling `data_dir.write_asset` or `db.save_derived_asset`. Non-skip path: calls `run_validators([TimelineValidator()], tl_result.mermaid)`, then writes `.mmd`, persists DAO record with `concept_id=LESSON_SCOPED_CONCEPT_ID`. Return type widened from `dict[str, str]` to `dict[str, Any]` to accommodate the bool-valued skip payload while keeping existing test code type-safe (avoids `object` which broke `str.endswith()` in `test_derived_assets.py`). `PersonalizationProfile` imported locally inside the branch (same pattern as mind_map). `GenerateRequest.kind` Literal and `_VALID_KINDS` both gain `"timeline"`.
 
 - **T3 — 2026-04-30**: `TimelineGenerator` filters `lesson_graph.concepts` to those with non-None `temporal_position`, sorts ascending, and emits one `section <title>` + `    <summary>` block per concept wrapped in a `timeline\n` preamble. Returns `TimelineSkipped` (sentinel dataclass) when no concept has `temporal_position` set; T4's Arq branch checks this type and skips persistence. `TimelineResult` is a frozen dataclass with `mermaid: str` and `concept_ids: list[str]` (in sorted order). Chose `temporal_position is not None` guard in the sort key lambda rather than a cast to keep mypy strict-mode happy without `# type: ignore`. `TimelineValidator` uses line-by-line scan: checks `timeline` first token, then iterates `splitlines()` to find `section` lines and validate non-empty titles. Chose concept `summary` (not `title`) as the event text under each section so the Mermaid output has two distinct visual levels (`section` header = concept title, event = summary); source-fidelity constraint preserved — no fabricated date strings.
 

@@ -10,16 +10,18 @@ import structlog
 from lyw_core.assessment.mnemonic import MnemonicGenerator
 from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID, Database, DerivedAsset
 from lyw_core.modalities.mindmap import MindMapGenerator
+from lyw_core.modalities.timeline import TimelineGenerator, TimelineSkipped
 from lyw_core.personalization.relevel import ReLeveler
 from lyw_core.personalization.replace import ExampleReplacer
 from lyw_core.storage.fs import DataDir
 from lyw_core.validators.base import run_validators
 from lyw_core.validators.faithfulness import SourceFaithfulnessValidator
 from lyw_core.validators.mindmap import MindMapValidator
+from lyw_core.validators.timeline import TimelineValidator
 
 _logger = structlog.get_logger(__name__)
 
-_VALID_KINDS = frozenset({"relevel", "replace", "mnemonic", "mind_map"})
+_VALID_KINDS = frozenset({"relevel", "replace", "mnemonic", "mind_map", "timeline"})
 
 
 async def personalize_concept(
@@ -29,7 +31,7 @@ async def personalize_concept(
     concept_id: str,
     profile_id: str,
     kind: str,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Generate and persist a derived asset.
 
     Parameters
@@ -43,7 +45,8 @@ async def personalize_concept(
     profile_id:
         The LearnerProfile id.
     kind:
-        One of ``"relevel"``, ``"replace"``, ``"mnemonic"``, or ``"mind_map"``.
+        One of ``"relevel"``, ``"replace"``, ``"mnemonic"``, ``"mind_map"``, or
+        ``"timeline"``.
 
     Returns
     -------
@@ -79,6 +82,30 @@ async def personalize_concept(
         run_validators([MindMapValidator()], mermaid)
         content = mermaid
         file_path = data_dir.write_asset(content.encode(), suffix=".mmd")
+        effective_concept_id = LESSON_SCOPED_CONCEPT_ID
+    elif kind == "timeline":
+        from lesson_graph.models import PersonalizationProfile
+
+        learner_profile = await db.get_profile(profile_id)
+        if learner_profile is None:
+            raise ValueError(f"profile not found: {profile_id!r}")
+        profile_obj = PersonalizationProfile(
+            grade_level=learner_profile.grade_level,
+            interests=learner_profile.interests,
+        )
+        gen_tl = TimelineGenerator()
+        tl_result = gen_tl.generate(lesson_graph, profile_obj)
+        if isinstance(tl_result, TimelineSkipped):
+            _logger.info(
+                "timeline_skipped",
+                lesson_id=lesson_id,
+                profile_id=profile_id,
+                reason="no_temporal_metadata",
+            )
+            return {"skipped": True, "reason": "no_temporal_metadata"}
+        # Non-skip path: validate and persist.
+        run_validators([TimelineValidator()], tl_result.mermaid)
+        file_path = data_dir.write_asset(tl_result.mermaid.encode(), suffix=".mmd")
         effective_concept_id = LESSON_SCOPED_CONCEPT_ID
     else:
         # Concept-level generators: look up the concept node first.

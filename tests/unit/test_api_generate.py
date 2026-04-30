@@ -147,12 +147,33 @@ def test_post_generate_invalid_kind_returns_422(client: TestClient) -> None:
 
 
 def test_post_generate_all_valid_kinds(client: TestClient) -> None:
-    for kind in ("relevel", "replace", "mnemonic", "mind_map"):
+    for kind in ("relevel", "replace", "mnemonic", "mind_map", "timeline"):
         response = client.post(
             "/lessons/lesson-1/generate",
             json={"concept_id": "c1", "profile_id": "p1", "kind": kind},
         )
         assert response.status_code == 202, f"kind={kind!r} should be accepted"
+
+
+def test_post_generate_timeline_returns_202_and_job_id(client: TestClient) -> None:
+    """POST with kind='timeline' returns 202 and a job_id immediately.
+
+    Confirms the timeline kind is accepted by the API layer and enqueued
+    without waiting for generation (which may result in TimelineSkipped).
+    """
+    response = client.post(
+        "/lessons/lesson-1/generate",
+        json={
+            "concept_id": "__lesson__",
+            "profile_id": "p1",
+            "kind": "timeline",
+        },
+    )
+    assert response.status_code == 202
+    body = response.json()
+    assert "job_id" in body
+    assert body["job_id"] == "job-abc"
+    assert body["status"] == "queued"
 
 
 def test_post_generate_mind_map_returns_202_and_job_id(client: TestClient) -> None:

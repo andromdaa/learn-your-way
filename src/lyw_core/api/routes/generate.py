@@ -26,7 +26,7 @@ router = APIRouter()
 class GenerateRequest(BaseModel):
     concept_id: str
     profile_id: str
-    kind: Literal["relevel", "replace", "mnemonic", "mind_map"]
+    kind: Literal["relevel", "replace", "mnemonic", "mind_map", "timeline"]
 
 
 class GenerateResponse(BaseModel):
