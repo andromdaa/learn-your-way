@@ -114,12 +114,22 @@ the research document on every point.
 This project uses `uv` with `uv.lock` committed. Tooling configuration
 lives in `pyproject.toml`.
 
+There are two separate dev dependency groups with different purposes:
+- `[project.optional-dependencies] dev` — CI tooling (`ruff`, `mypy`,
+  `pytest`, `pytest-cov`). Not installed by default; activate with
+  `uv sync --extra dev`. Required before running lint, type-check, or
+  coverage locally.
+- `[dependency-groups] dev` — local-only test helpers (`hypothesis`,
+  `pre-commit`, `pytest-asyncio`, `syrupy`, `testcontainers`). Installed
+  automatically by a plain `uv sync`.
+
 When adding a Python dependency:
 1. Runtime dep: `uv add <package>`
-2. Dev/test dep: `uv add --group dev <package>` (or `--optional dev`
-   for the `[project.optional-dependencies]` table — match where
-   similar packages already live).
-3. Commit the updated `pyproject.toml` and `uv.lock` together.
+2. CI tooling: `uv add --optional dev <package>` (goes in
+   `[project.optional-dependencies].dev`)
+3. Local test helper: `uv add --group dev <package>` (goes in
+   `[dependency-groups].dev`)
+4. Commit the updated `pyproject.toml` and `uv.lock` together.
 
 Run commands inside the env via `uv run <cmd>` (e.g. `uv run pytest`,
 `uv run mypy`, `uv run ruff check`). `.venv/` is materialized lazily by
