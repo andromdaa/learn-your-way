@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from syrupy.assertion import SnapshotAssertion
 
 from lesson_graph.models import (
@@ -11,7 +10,11 @@ from lesson_graph.models import (
     PersonalizationProfile,
     SourceSpan,
 )
-from lyw_core.modalities.timeline import TimelineGenerator, TimelineResult, TimelineSkipped
+from lyw_core.modalities.timeline import (
+    TimelineGenerator,
+    TimelineResult,
+    TimelineSkipped,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures
