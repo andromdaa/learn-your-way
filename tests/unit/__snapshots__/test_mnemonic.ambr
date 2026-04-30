@@ -1,0 +1,8 @@
+# serializer version: 1
+# name: test_mnemonic_generate_returns_result
+  dict({
+    'concept_id': 'c1',
+    'source_span': SourceSpan(doc_id='doc-1', page_start=1, page_end=2, char_start=0, char_end=500),
+    'text': 'Plants Wildly Gobble Carbon Oxygen (PWGCO)',
+  })
+# ---
