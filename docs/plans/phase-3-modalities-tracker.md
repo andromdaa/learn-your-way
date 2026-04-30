@@ -25,10 +25,12 @@ prerequisites.
 - [x] [T2: Mind-map Arq integration (extend personalize_concept + generate endpoint)](phase-3/T2-mindmap-arq.md)
 - [x] [T3: Timeline generator + validator (Mermaid, temporal skip path, raises on failure)](phase-3/T3-timeline-generator.md)
 - [x] [T4: Timeline Arq integration (extend personalize_concept + generate endpoint)](phase-3/T4-timeline-arq.md)
-- [ ] [T5: Slide generator + validator (per-slide discard, MCQGenerator pattern)](phase-3/T5-slide-generator.md)
+- [x] [T5: Slide generator + validator (per-slide discard, MCQGenerator pattern)](phase-3/T5-slide-generator.md)
 - [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T5 — 2026-04-30**: `SlideGenerator` uses two-step LLM approach: outline call returns JSON array of `SlideOutlineItem` (title, key_points, concept_id); one body call per item returns `{body, speaker_notes}`. Both steps use `pydantic.BaseModel.model_validate_json` / `model_validate` for parsing; malformed JSON on the outline step raises `ValidationError`. Per-slide discard: `SlideValidator` checks title/body/source_spans/concept_id are non-empty; failing slides are warned via structlog and skipped; all discarded raises `ValidationError`. `SlideValidator` uses `payload: Any` (not `Slide`) to break the circular import between `modalities/slides.py` and `validators/slides.py`. Prompt builders live under `src/lyw_core/modalities/prompts/slides.py`; `build_slide_body_messages` takes only `(title, key_points)` — concept summary not needed in the body step since the outline already encodes the key points. `SlideDeck.based_on_concepts` is a deduped list of `concept_id` from accepted slides.
 
 - **T4 — 2026-04-30**: `personalize_concept` extended with `elif kind == "timeline"` branch. Skip path: `isinstance(tl_result, TimelineSkipped)` guard returns `{"skipped": True, "reason": "no_temporal_metadata"}` immediately without calling `data_dir.write_asset` or `db.save_derived_asset`. Non-skip path: calls `run_validators([TimelineValidator()], tl_result.mermaid)`, then writes `.mmd`, persists DAO record with `concept_id=LESSON_SCOPED_CONCEPT_ID`. Return type widened from `dict[str, str]` to `dict[str, Any]` to accommodate the bool-valued skip payload while keeping existing test code type-safe (avoids `object` which broke `str.endswith()` in `test_derived_assets.py`). `PersonalizationProfile` imported locally inside the branch (same pattern as mind_map). `GenerateRequest.kind` Literal and `_VALID_KINDS` both gain `"timeline"`.
 
