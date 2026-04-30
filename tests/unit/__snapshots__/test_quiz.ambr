@@ -1,0 +1,125 @@
+# serializer version: 1
+# name: test_section_quiz_collects_items_per_concept
+  list([
+    dict({
+      'bloom_level': 'understand',
+      'concept_id': 'c1',
+      'correct_answer': 'Option A',
+      'difficulty': 'easy',
+      'id': 'i1a',
+      'kind': 'mcq',
+      'prompt': 'Q1a',
+      'rationale': 'Test rationale.',
+      'source_spans': list([
+        dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+      ]),
+    }),
+    dict({
+      'bloom_level': 'understand',
+      'concept_id': 'c1',
+      'correct_answer': 'Option A',
+      'difficulty': 'easy',
+      'id': 'i1b',
+      'kind': 'mcq',
+      'prompt': 'Q1b',
+      'rationale': 'Test rationale.',
+      'source_spans': list([
+        dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+      ]),
+    }),
+    dict({
+      'bloom_level': 'understand',
+      'concept_id': 'c2',
+      'correct_answer': 'Option A',
+      'difficulty': 'easy',
+      'id': 'i2a',
+      'kind': 'mcq',
+      'prompt': 'Q2a',
+      'rationale': 'Test rationale.',
+      'source_spans': list([
+        dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+      ]),
+    }),
+    dict({
+      'bloom_level': 'understand',
+      'concept_id': 'c2',
+      'correct_answer': 'Option A',
+      'difficulty': 'easy',
+      'id': 'i2b',
+      'kind': 'mcq',
+      'prompt': 'Q2b',
+      'rationale': 'Test rationale.',
+      'source_spans': list([
+        dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+      ]),
+    }),
+    dict({
+      'bloom_level': 'understand',
+      'concept_id': 'c3',
+      'correct_answer': 'Option A',
+      'difficulty': 'easy',
+      'id': 'i3a',
+      'kind': 'mcq',
+      'prompt': 'Q3a',
+      'rationale': 'Test rationale.',
+      'source_spans': list([
+        dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+      ]),
+    }),
+    dict({
+      'bloom_level': 'understand',
+      'concept_id': 'c3',
+      'correct_answer': 'Option A',
+      'difficulty': 'easy',
+      'id': 'i3b',
+      'kind': 'mcq',
+      'prompt': 'Q3b',
+      'rationale': 'Test rationale.',
+      'source_spans': list([
+        dict({
+          'char_end': 500,
+          'char_start': 0,
+          'doc_id': 'doc-1',
+          'page_end': 2,
+          'page_start': 1,
+        }),
+      ]),
+    }),
+  ])
+# ---
+# name: test_section_quiz_generates_glows_grows
+  dict({
+    'glows': 'You showed great understanding!',
+    'grows': 'Focus on applying concepts.',
+  })
+# ---

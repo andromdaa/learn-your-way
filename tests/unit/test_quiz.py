@@ -51,7 +51,7 @@ def _make_sqg(
     if model_client is None:
         model_client = AsyncMock()
     return SectionQuizGenerator(
-        mcq_generator=mcq_gen,  # type: ignore[arg-type]
+        mcq_generator=mcq_gen,
         model_client=model_client,
         dao=MagicMock(),
     )
@@ -65,7 +65,7 @@ def _make_sqg(
 async def test_section_quiz_collects_items_per_concept(
     snapshot: SnapshotAssertion,
 ) -> None:
-    """3 concepts × 2 items each = 6 total; MCQGenerator called once per concept."""
+    """3 concepts x 2 items each = 6 total; MCQGenerator called once per concept."""
     concepts = [
         _concept("c1", "Photosynthesis"),
         _concept("c2", "Cell Wall"),
@@ -74,9 +74,18 @@ async def test_section_quiz_collects_items_per_concept(
     graph = LessonGraph(id="g1", source_id="doc-1", concepts=concepts)
 
     items_per_concept = {
-        "c1": [_assessment_item("i1a", "c1", "Q1a"), _assessment_item("i1b", "c1", "Q1b")],
-        "c2": [_assessment_item("i2a", "c2", "Q2a"), _assessment_item("i2b", "c2", "Q2b")],
-        "c3": [_assessment_item("i3a", "c3", "Q3a"), _assessment_item("i3b", "c3", "Q3b")],
+        "c1": [
+            _assessment_item("i1a", "c1", "Q1a"),
+            _assessment_item("i1b", "c1", "Q1b"),
+        ],
+        "c2": [
+            _assessment_item("i2a", "c2", "Q2a"),
+            _assessment_item("i2b", "c2", "Q2b"),
+        ],
+        "c3": [
+            _assessment_item("i3a", "c3", "Q3a"),
+            _assessment_item("i3b", "c3", "Q3b"),
+        ],
     }
 
     async def fake_generate(
@@ -89,7 +98,7 @@ async def test_section_quiz_collects_items_per_concept(
     dao = MagicMock()
 
     sqg = SectionQuizGenerator(
-        mcq_generator=mcq_gen,  # type: ignore[arg-type]
+        mcq_generator=mcq_gen,
         model_client=AsyncMock(),
         dao=dao,
     )
