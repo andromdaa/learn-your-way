@@ -110,7 +110,7 @@ After closeout, scan `docs/plans/phase-<N>-tracker.md` for the next unchecked ta
 ## Safety
 
 - **Sentinel:** check `.claude/STOP_LOOP` at repo root before each iteration. `touch .claude/STOP_LOOP` from another terminal to halt between tasks.
-- **Watchdog:** cap fix-forward at 2 attempts per task. Cap consecutive auto-tasks at 5 — re-invoke explicitly to continue beyond 5.
+- **Watchdog:** cap fix-forward at 5 attempts per task. Cap consecutive auto-tasks at 20 — re-invoke explicitly to continue beyond 20.
 - **Never retry a failed task silently.** If a task aborts (CI cap exceeded, push failure, merge failure), stop the loop and leave the branch open for inspection.
 
 ## See also

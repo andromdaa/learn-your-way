@@ -17,6 +17,7 @@ dependencies = [
     "redis[hiredis]>=7.4.0",
     "sentence-transformers>=5.4.1",
     "structlog>=25.5.0",
+    "textstat>=0.7,<0.8",
 ]
 
 [project.optional-dependencies]
@@ -94,6 +95,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "sentence_transformers.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "textstat.*"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
