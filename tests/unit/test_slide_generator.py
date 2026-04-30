@@ -8,10 +8,14 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from lesson_graph.models import ConceptNode, LessonGraph, PersonalizationProfile, SourceSpan
-from lyw_core.modalities.slides import Slide, SlideDeck, SlideGenerator
+from lesson_graph.models import (
+    ConceptNode,
+    LessonGraph,
+    PersonalizationProfile,
+    SourceSpan,
+)
+from lyw_core.modalities.slides import SlideDeck, SlideGenerator
 from lyw_core.validators.base import ValidationError
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -128,9 +132,7 @@ async def test_slide_without_source_spans_is_discarded() -> None:
         ]
     )
     # First slide: good body with source_spans populated from the concept
-    good_body = json.dumps(
-        {"body": "Valid content.", "speaker_notes": "Valid notes."}
-    )
+    good_body = json.dumps({"body": "Valid content.", "speaker_notes": "Valid notes."})
     # Second slide: returned with empty body to trigger validator failure
     bad_body = json.dumps({"body": "", "speaker_notes": "Notes."})
 
@@ -174,7 +176,7 @@ async def test_malformed_outline_json_raises_error() -> None:
     model_client.complete.return_value = "not valid json {"
 
     gen = SlideGenerator()
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         await gen.generate(graph, _profile(), model_client)
 
 
