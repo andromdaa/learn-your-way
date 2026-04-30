@@ -17,7 +17,6 @@ Gap detection algorithm:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 from unittest.mock import AsyncMock
 
@@ -27,14 +26,15 @@ from lesson_graph import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.assessment.gap import GapDetector
 from lyw_core.db.dao import AttemptRecord
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
 def _span() -> SourceSpan:
-    return SourceSpan(doc_id="doc-1", page_start=1, page_end=2, char_start=0, char_end=100)
+    return SourceSpan(
+        doc_id="doc-1", page_start=1, page_end=2, char_start=0, char_end=100
+    )
 
 
 def _concept(id: str, prerequisites: list[str] | None = None) -> ConceptNode:
@@ -265,9 +265,7 @@ async def test_first_prerequisite_mastered_returns_second() -> None:
         # prereq-high is mastered
         _attempt("a2", "high-item", correct=True),
     ]
-    dao = _make_dao(
-        attempts, {"item-1": target_item, "high-item": high_item}
-    )
+    dao = _make_dao(attempts, {"item-1": target_item, "high-item": high_item})
 
     detector = GapDetector()
     result = await detector.next_concept("p1", graph, dao)

@@ -4,12 +4,26 @@ from __future__ import annotations
 
 import importlib.resources
 import json
+import uuid
+from dataclasses import dataclass
 from typing import Any
 
 import aiosqlite
 
 from lesson_graph import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.profiles.models import LearnerProfile
+
+
+@dataclass
+class AttemptRecord:
+    """A single learner attempt at an assessment item."""
+
+    id: str
+    profile_id: str
+    item_id: str
+    response: str
+    correct: bool
+    attempted_at: str
 
 
 class Database:
@@ -279,3 +293,77 @@ class Database:
                 )
             )
         return items
+
+    async def get_item_by_id(self, item_id: str) -> AssessmentItem | None:
+        """Return a single AssessmentItem by its primary key, or None."""
+        async with self._conn.execute(
+            """
+            SELECT id, concept_id, kind, prompt, rationale,
+                   difficulty, correct_answer, bloom_level, source_spans
+            FROM assessment_items
+            WHERE id = ?
+            """,
+            (item_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        spans = [SourceSpan(**d) for d in json.loads(row["source_spans"])]
+        return AssessmentItem(
+            id=row["id"],
+            concept_id=row["concept_id"],
+            kind=row["kind"],
+            prompt=row["prompt"],
+            rationale=row["rationale"],
+            difficulty=row["difficulty"],
+            correct_answer=row["correct_answer"],
+            bloom_level=row["bloom_level"],
+            source_spans=spans,
+        )
+
+    # ------------------------------------------------------------------
+    # Attempts
+    # ------------------------------------------------------------------
+
+    async def record_attempt(
+        self,
+        profile_id: str,
+        item_id: str,
+        response: str,
+        correct: bool,
+    ) -> None:
+        """Persist a single learner attempt; id and attempted_at are
+        generated server-side."""
+        attempt_id = str(uuid.uuid4())
+        await self._conn.execute(
+            """
+            INSERT INTO attempts (id, profile_id, item_id, response, correct)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (attempt_id, profile_id, item_id, response, int(correct)),
+        )
+        await self._conn.commit()
+
+    async def get_profile_attempts(self, profile_id: str) -> list[AttemptRecord]:
+        """Return all attempts for a profile, ordered by attempted_at ASC."""
+        async with self._conn.execute(
+            """
+            SELECT id, profile_id, item_id, response, correct, attempted_at
+            FROM attempts
+            WHERE profile_id = ?
+            ORDER BY attempted_at ASC
+            """,
+            (profile_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            AttemptRecord(
+                id=row["id"],
+                profile_id=row["profile_id"],
+                item_id=row["item_id"],
+                response=row["response"],
+                correct=bool(row["correct"]),
+                attempted_at=row["attempted_at"],
+            )
+            for row in rows
+        ]
