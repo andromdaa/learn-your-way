@@ -17,7 +17,7 @@ prerequisites.
 
 ## Tasks
 
-- [ ] [T0c-r1: Add "mnemonic" to DerivedAsset.kind Pydantic Literal (SCHEMA_CHANGE=1)](phase-3/T0c-r1-carryover-debt.md)
+- [x] [T0c-r1: Add "mnemonic" to DerivedAsset.kind Pydantic Literal (SCHEMA_CHANGE=1)](phase-3/T0c-r1-carryover-debt.md)
 - [ ] [T0c-r2: temporal_position schema change on ConceptNode (ADR-0014)](phase-3/T0c-r2-temporal-position-schema.md)
 - [ ] [T0c-r3: quiz_id schema change + DAO + SectionQuizGenerator wiring (ADR-0015)](phase-3/T0c-r3-quiz-id-schema.md)
 - [ ] [T0c-r4: Glows-Grows in POST /v1/attempts response](phase-3/T0c-r4-glows-grows-attempts.md)
@@ -29,6 +29,13 @@ prerequisites.
 - [ ] [T6: Slide Arq integration + asset retrieval endpoint](phase-3/T6-slide-arq-retrieval.md)
 
 ## Decisions Made
+
+- **T0c-r1 — 2026-04-30**: Added `"mnemonic"` to `DerivedAsset.kind` Literal only
+  (no SQLite migration needed; DAO `_VALID_KINDS` already included it). Chose to
+  widen the Pydantic Literal without any validator changes because the DAO and Arq
+  job were already persisting mnemonics correctly — the only gap was the Pydantic
+  type annotation. Phase-2 retrospective carry-over entries corrected to reflect
+  T0c-r3/T0c-r4 ownership of quiz_id and Glows-Grows.
 
 - **Q1 — Lesson-level `concept_id` sentinel**: use named constant
   `LESSON_SCOPED_CONCEPT_ID = "__lesson__"` in `src/lyw_core/db/dao.py`.
@@ -66,9 +73,10 @@ blockers or ambiguities here as they arise)_
 
 ## Out-of-Spec Discoveries
 
-_(empty — record anything found during implementation that conflicts
-with or extends `specs/phase-3-modalities.md`. Each entry must end
-with either "reconciled in PR #N" or "deferred to phase 4".)_
+- **Two pre-existing snapshot test failures in `tests/unit/test_cli.py`**
+  (`test_render_tree_snapshot`, `test_run_inspect_stdout_snapshot`): actual
+  output has an extra trailing newline vs the stored snapshot. Confirmed
+  present on `main` before T0c-r1; not caused by schema change. Deferred to phase 4.
 
 ## Spec Coverage
 

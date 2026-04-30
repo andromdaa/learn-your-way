@@ -249,7 +249,14 @@ def test_derived_asset_rejects_audio_lesson_kind() -> None:
 
 
 def test_derived_asset_accepts_all_in_scope_kinds() -> None:
-    for kind in ("immersive_text", "slides", "mind_map", "timeline", "image"):
+    for kind in (
+        "immersive_text",
+        "slides",
+        "mind_map",
+        "timeline",
+        "image",
+        "mnemonic",
+    ):
         asset = DerivedAsset(
             id=f"a-{kind}",
             kind=kind,
@@ -257,6 +264,16 @@ def test_derived_asset_accepts_all_in_scope_kinds() -> None:
             personalization_profile=_profile(),
         )
         assert asset.kind == kind
+
+
+def test_derived_asset_accepts_mnemonic_kind() -> None:
+    asset = DerivedAsset(
+        id="a-mnemonic",
+        kind="mnemonic",
+        based_on_concepts=["c1"],
+        personalization_profile=_profile(),
+    )
+    assert asset.kind == "mnemonic"
 
 
 # ReplacementRecord / PersonalizationProfile --------------------------------

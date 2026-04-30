@@ -78,7 +78,7 @@ class AssessmentItem(BaseModel):
 
 class DerivedAsset(BaseModel):
     id: str
-    kind: Literal["immersive_text", "slides", "mind_map", "timeline", "image"]
+    kind: Literal["immersive_text", "slides", "mind_map", "timeline", "image", "mnemonic"]
     based_on_concepts: list[str] = Field(min_length=1)
     personalization_profile: PersonalizationProfile  # ADR-0009
     uri: str | None = None
