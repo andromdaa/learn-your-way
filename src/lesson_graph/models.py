@@ -111,11 +111,19 @@ class AssessmentItem(BaseModel):
     rationale: str
     source_spans: list[SourceSpan] = Field(min_length=1)
     difficulty: Literal["easy", "medium", "hard"]
+    concept_id: str
     correct_answer: str | None = None
     bloom_level: (
         Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
         | None
     ) = None
+
+    @field_validator("concept_id")
+    @classmethod
+    def _concept_id_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("concept_id must not be empty")
+        return v
 
 
 class DerivedAsset(BaseModel):

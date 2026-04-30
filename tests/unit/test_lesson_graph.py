@@ -147,49 +147,48 @@ def test_concept_node_provenance_rejects_invalid() -> None:
 # AssessmentItem ------------------------------------------------------------
 
 
+def _item(**kwargs: object) -> AssessmentItem:
+    defaults: dict[str, object] = {
+        "id": "q1",
+        "kind": "mcq",
+        "prompt": "p",
+        "rationale": "r",
+        "source_spans": [_span()],
+        "difficulty": "easy",
+        "concept_id": "c1",
+    }
+    defaults.update(kwargs)
+    return AssessmentItem(**defaults)
+
+
 def test_assessment_item_valid() -> None:
-    item = AssessmentItem(
-        id="q1",
-        kind="mcq",
+    item = _item(
         prompt="What is photosynthesis?",
         rationale="Plants convert light into chemical energy.",
-        source_spans=[_span()],
-        difficulty="easy",
     )
     assert item.kind == "mcq"
+    assert item.concept_id == "c1"
 
 
 def test_assessment_item_requires_span() -> None:
     with pytest.raises(ValidationError):
-        AssessmentItem(
-            id="q1",
-            kind="mcq",
-            prompt="p",
-            rationale="r",
-            source_spans=[],
-            difficulty="easy",
-        )
+        _item(source_spans=[])
 
 
 def test_assessment_item_rejects_unknown_kind() -> None:
     with pytest.raises(ValidationError):
-        AssessmentItem(
-            id="q1",
-            kind="essay",
-            prompt="p",
-            rationale="r",
-            source_spans=[_span()],
-            difficulty="easy",
-        )
+        _item(kind="essay")
+
+
+def test_assessment_item_rejects_empty_concept_id() -> None:
+    with pytest.raises(ValidationError):
+        _item(concept_id="")
 
 
 def test_assessment_item_correct_answer_and_bloom_level_round_trip() -> None:
-    item = AssessmentItem(
-        id="q1",
-        kind="mcq",
+    item = _item(
         prompt="What drives photosynthesis?",
         rationale="Sunlight provides the energy for the reaction.",
-        source_spans=[_span()],
         difficulty="medium",
         correct_answer="Sunlight",
         bloom_level="understand",
@@ -201,29 +200,14 @@ def test_assessment_item_correct_answer_and_bloom_level_round_trip() -> None:
 
 
 def test_assessment_item_correct_answer_and_bloom_level_default_to_none() -> None:
-    item = AssessmentItem(
-        id="q1",
-        kind="mcq",
-        prompt="p",
-        rationale="r",
-        source_spans=[_span()],
-        difficulty="easy",
-    )
+    item = _item()
     assert item.correct_answer is None
     assert item.bloom_level is None
 
 
 def test_assessment_item_rejects_unknown_bloom_level() -> None:
     with pytest.raises(ValidationError):
-        AssessmentItem(
-            id="q1",
-            kind="mcq",
-            prompt="p",
-            rationale="r",
-            source_spans=[_span()],
-            difficulty="easy",
-            bloom_level="synthesis",
-        )
+        _item(bloom_level="synthesis")
 
 
 # DerivedAsset --------------------------------------------------------------
