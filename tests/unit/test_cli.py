@@ -15,9 +15,19 @@ from lyw_core.parser.models import ParsedBlock, ParsedDocument
 
 _FIXTURE_PDF = Path(__file__).parent.parent / "fixtures" / "tiny_test.pdf"
 
+# Bodies are intentionally above the chunker's _MIN_BODY_CHARS (120)
+# threshold so each section produces its own concept node.
+_PARSED_BODY1 = (
+    "This is the introduction body, providing scope, goals, and context "
+    "for the chapter and the methods that follow it later."
+)
+_PARSED_BODY2 = (
+    "This describes the methods used in the experiment, including the "
+    "setup, procedure, controls, and the data collection process."
+)
 _PARSED_DOC = ParsedDocument(
     source_path="test.pdf",
-    text="Introduction\nThis is the body.\nMethods\nMore content here.",
+    text=("Introduction\n" + _PARSED_BODY1 + "\nMethods\n" + _PARSED_BODY2),
     blocks=[
         ParsedBlock(
             block_id="b1",
@@ -31,25 +41,25 @@ _PARSED_DOC = ParsedDocument(
             block_id="b2",
             page_number=1,
             block_type="text",
-            text="This is the body.",
+            text=_PARSED_BODY1,
             char_start=13,
-            char_end=30,
+            char_end=133,
         ),
         ParsedBlock(
             block_id="b3",
             page_number=1,
             block_type="section_header",
             text="Methods",
-            char_start=31,
-            char_end=38,
+            char_start=134,
+            char_end=141,
         ),
         ParsedBlock(
             block_id="b4",
             page_number=1,
             block_type="text",
-            text="More content here.",
-            char_start=39,
-            char_end=57,
+            text=_PARSED_BODY2,
+            char_start=142,
+            char_end=267,
         ),
     ],
     page_count=1,
