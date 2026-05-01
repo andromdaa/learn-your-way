@@ -102,7 +102,9 @@ def test_sse_job_events_content_type_with_real_redis(redis_container_url: str) -
     assert any("complete" in line for line in lines)
 
 
-def test_sse_global_events_content_type_with_real_redis(redis_container_url: str) -> None:
+def test_sse_global_events_content_type_with_real_redis(
+    redis_container_url: str,
+) -> None:
     """Global /v1/jobs/events SSE endpoint returns text/event-stream."""
     import asyncio
 

@@ -15,6 +15,7 @@ import pytest
 from lesson_graph.models import ConceptNode, LessonGraph, SourceSpan
 from lyw_core.db.dao import Database, DerivedAsset
 from lyw_core.profiles.models import LearnerProfile
+from lyw_core.worker.result import Failure, Success
 
 # ---------------------------------------------------------------------------
 # Helpers shared by DAO and job tests
@@ -205,7 +206,8 @@ async def test_personalize_concept_relevel(tmp_path: Path) -> None:
             kind="relevel",
         )
 
-    assert result["asset_id"]
+    assert isinstance(result, Success)
+    assert result.payload["asset_id"]
     db: AsyncMock = ctx["db"]
     db.save_derived_asset.assert_awaited_once()
     saved: DerivedAsset = db.save_derived_asset.call_args[0][0]
@@ -239,7 +241,8 @@ async def test_personalize_concept_replace(tmp_path: Path) -> None:
             kind="replace",
         )
 
-    assert result["asset_id"]
+    assert isinstance(result, Success)
+    assert result.payload["asset_id"]
     db: AsyncMock = ctx["db"]
     db.save_derived_asset.assert_awaited_once()
     saved: DerivedAsset = db.save_derived_asset.call_args[0][0]
@@ -251,14 +254,15 @@ async def test_personalize_concept_invalid_kind(tmp_path: Path) -> None:
     from lyw_core.worker.jobs.personalize import personalize_concept
 
     ctx = _make_ctx(tmp_path)
-    with pytest.raises(ValueError, match="kind must be one of"):
-        await personalize_concept(
-            ctx,
-            lesson_id="g1",
-            concept_id="c1",
-            profile_id="p1",
-            kind="unknown",
-        )
+    result = await personalize_concept(
+        ctx,
+        lesson_id="g1",
+        concept_id="c1",
+        profile_id="p1",
+        kind="unknown",
+    )
+    assert isinstance(result, Failure)
+    assert result.code == "invalid_kind"
 
 
 @pytest.mark.asyncio
@@ -268,14 +272,15 @@ async def test_personalize_concept_lesson_not_found(tmp_path: Path) -> None:
     ctx = _make_ctx(tmp_path)
     ctx["db"].get_lesson_graph = AsyncMock(return_value=None)
 
-    with pytest.raises(ValueError, match="lesson not found"):
-        await personalize_concept(
-            ctx,
-            lesson_id="no-such",
-            concept_id="c1",
-            profile_id="p1",
-            kind="relevel",
-        )
+    result = await personalize_concept(
+        ctx,
+        lesson_id="no-such",
+        concept_id="c1",
+        profile_id="p1",
+        kind="relevel",
+    )
+    assert isinstance(result, Failure)
+    assert result.code == "lesson_not_found"
 
 
 @pytest.mark.asyncio
@@ -284,14 +289,15 @@ async def test_personalize_concept_concept_not_found(tmp_path: Path) -> None:
 
     ctx = _make_ctx(tmp_path)
 
-    with pytest.raises(ValueError, match=r"concept.*not found"):
-        await personalize_concept(
-            ctx,
-            lesson_id="g1",
-            concept_id="no-such-concept",
-            profile_id="p1",
-            kind="relevel",
-        )
+    result = await personalize_concept(
+        ctx,
+        lesson_id="g1",
+        concept_id="no-such-concept",
+        profile_id="p1",
+        kind="relevel",
+    )
+    assert isinstance(result, Failure)
+    assert result.code == "concept_not_found"
 
 
 @pytest.mark.asyncio
@@ -301,14 +307,15 @@ async def test_personalize_concept_relevel_profile_not_found(tmp_path: Path) -> 
     ctx = _make_ctx(tmp_path)
     ctx["db"].get_profile = AsyncMock(return_value=None)
 
-    with pytest.raises(ValueError, match="profile not found"):
-        await personalize_concept(
-            ctx,
-            lesson_id="g1",
-            concept_id="c1",
-            profile_id="missing-profile",
-            kind="relevel",
-        )
+    result = await personalize_concept(
+        ctx,
+        lesson_id="g1",
+        concept_id="c1",
+        profile_id="missing-profile",
+        kind="relevel",
+    )
+    assert isinstance(result, Failure)
+    assert result.code == "profile_not_found"
 
 
 @pytest.mark.asyncio
@@ -318,29 +325,27 @@ async def test_personalize_concept_replace_profile_not_found(tmp_path: Path) -> 
     ctx = _make_ctx(tmp_path)
     ctx["db"].get_profile = AsyncMock(return_value=None)
 
-    with pytest.raises(ValueError, match="profile not found"):
-        await personalize_concept(
-            ctx,
-            lesson_id="g1",
-            concept_id="c1",
-            profile_id="missing-profile",
-            kind="replace",
-        )
+    result = await personalize_concept(
+        ctx,
+        lesson_id="g1",
+        concept_id="c1",
+        profile_id="missing-profile",
+        kind="replace",
+    )
+    assert isinstance(result, Failure)
+    assert result.code == "profile_not_found"
 
 
 @pytest.mark.asyncio
-async def test_personalize_concept_replace_raises_on_thin_source(
+async def test_personalize_concept_replace_thin_source_returns_failure(
     tmp_path: Path,
 ) -> None:
-    """Issue #77: thin concept.summary => ReplaceSourceTooThinError propagates and no asset row is saved.
+    """Thin concept.summary returns a typed Failure (no exception raised, no asset row saved).
 
-    Distinct from #64 (markdown-fence parse failure produced empty asset);
-    here parsing is not even attempted because the *input* fails the
-    pre-flight gate. The orchestrator does not catch the exception; the
-    Arq job ends with success=False and the API surfaces status="failed"
-    via the existing #66 path. This test asserts no DB row is written.
+    Issue #77: the pre-flight gate in ExampleReplacer raises ReplaceSourceTooThinError;
+    the job boundary catches it and converts it to Failure(code="thin_source").
+    The model is never called and no DB row is written.
     """
-    from lyw_core.personalization.replace import ReplaceSourceTooThinError
     from lyw_core.worker.jobs.personalize import personalize_concept
 
     ctx = _make_ctx(tmp_path)
@@ -357,14 +362,17 @@ async def test_personalize_concept_replace_raises_on_thin_source(
     thin_graph = LessonGraph(id="g1", source_id="src-1", concepts=[thin_concept])
     ctx["db"].get_lesson_graph = AsyncMock(return_value=thin_graph)
 
-    with pytest.raises(ReplaceSourceTooThinError):
-        await personalize_concept(
-            ctx,
-            lesson_id="g1",
-            concept_id="c1",
-            profile_id="p1",
-            kind="replace",
-        )
+    result = await personalize_concept(
+        ctx,
+        lesson_id="g1",
+        concept_id="c1",
+        profile_id="p1",
+        kind="replace",
+    )
+
+    assert isinstance(result, Failure)
+    assert result.code == "thin_source"
+    assert result.details["concept_id"] == "c1"
 
     # No asset row written; no model call made.
     db: AsyncMock = ctx["db"]
@@ -396,5 +404,26 @@ async def test_personalize_concept_writes_file_to_data_dir(tmp_path: Path) -> No
             kind="relevel",
         )
 
-    assert Path(result["file_path"]).exists()
-    assert Path(result["file_path"]).read_text() == "Generated text for test."
+    assert isinstance(result, Success)
+    assert Path(result.payload["file_path"]).exists()
+    assert Path(result.payload["file_path"]).read_text() == "Generated text for test."
+
+
+@pytest.mark.asyncio
+async def test_failure_pickles_cleanly() -> None:
+    """Failure must round-trip through pickle without losing structure.
+
+    Pydantic models pickle cleanly — this test is the regression guard that
+    would have caught the __reduce__-missing defects in AND-21/22/23.
+    """
+    import pickle
+
+    failure = Failure(
+        code="thin_source",
+        message="concept 'c1' summary too thin",
+        details={"concept_id": "c1", "char_count": 5, "word_count": 1},
+    )
+    roundtripped = pickle.loads(pickle.dumps(failure))
+    assert roundtripped.code == failure.code
+    assert roundtripped.message == failure.message
+    assert roundtripped.details == failure.details

@@ -73,7 +73,9 @@ async def test_shutdown_delegates_to_ingest_shutdown() -> None:
 
     ctx: dict[str, Any] = {"db": AsyncMock()}
 
-    with patch("lyw_core.worker.settings._ingest_shutdown", new_callable=AsyncMock) as mock_sd:
+    with patch(
+        "lyw_core.worker.settings._ingest_shutdown", new_callable=AsyncMock
+    ) as mock_sd:
         await shutdown(ctx)
 
     mock_sd.assert_awaited_once_with(ctx)

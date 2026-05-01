@@ -160,28 +160,30 @@ async def test_smoke_personalize_relevel_succeeds(
         profile_id=_PROFILE_ID,
         kind="relevel",
     )
-    assert "asset_id" in result
-    assert Path(result["file_path"]).exists()
+    from lyw_core.worker.result import Success
+
+    assert isinstance(result, Success)
+    assert "asset_id" in result.payload
+    assert Path(result.payload["file_path"]).exists()
 
 
 @pytest.mark.integration
 @pytest.mark.timeout(300)
-async def test_smoke_personalize_exception_propagates(
+async def test_smoke_personalize_ollama_error_returns_failure(
     db: Database,
     qdrant_client: QdrantClient,
     embedding: EmbeddingModel,
     data_dir: DataDir,
 ) -> None:
-    """When the model raises OllamaError, personalize_concept propagates it cleanly.
+    """When the model raises OllamaError, personalize_concept returns a typed Failure.
 
-    This is the "not 500" contract: the exception leaves the job function
-    as a typed exception (not an unhandled crash), so arq can pickle it
-    into Redis and the API can return status="failed" rather than HTTP 500.
-    The pickle invariant test in test_pickle_invariant.py separately verifies
-    that OllamaError survives the Redis round-trip.
+    This is the "not 500" contract: the error leaves the job function as a
+    typed Failure (not an unhandled crash), so Arq pickles the Pydantic model
+    cleanly and the API returns status="failed" rather than HTTP 500.
     """
     from lyw_core.worker.jobs.ingest import ingest_source
     from lyw_core.worker.jobs.personalize import personalize_concept
+    from lyw_core.worker.result import Failure
 
     doc_id = "ci_smoke_error"
     lesson_id = f"lesson_{doc_id}"
@@ -211,12 +213,13 @@ async def test_smoke_personalize_exception_propagates(
         "data_dir": data_dir,
         "model_client": _RaisingModelClient(),
     }
-    with pytest.raises(OllamaError) as exc_info:
-        await personalize_concept(
-            personalize_ctx,
-            lesson_id=lesson_id,
-            concept_id=concept_id,
-            profile_id=_PROFILE_ID,
-            kind="relevel",
-        )
-    assert exc_info.value.status_code == 500
+    result = await personalize_concept(
+        personalize_ctx,
+        lesson_id=lesson_id,
+        concept_id=concept_id,
+        profile_id=_PROFILE_ID,
+        kind="relevel",
+    )
+    assert isinstance(result, Failure)
+    assert result.code == "ollama_error"
+    assert result.details["status_code"] == 500

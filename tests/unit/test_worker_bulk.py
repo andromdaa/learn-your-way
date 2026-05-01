@@ -14,7 +14,9 @@ def _concept(cid: str = "c1") -> ConceptNode:
         title="T",
         summary="s",
         learning_objective="lo",
-        source_spans=[SourceSpan(doc_id="d", page_start=1, page_end=1, char_start=0, char_end=5)],
+        source_spans=[
+            SourceSpan(doc_id="d", page_start=1, page_end=1, char_start=0, char_end=5)
+        ],
     )
 
 
@@ -24,7 +26,9 @@ def _graph(concepts: list[ConceptNode] | None = None) -> LessonGraph:
     )
 
 
-def _make_ctx(db: AsyncMock | None = None, redis: AsyncMock | None = None) -> dict[str, Any]:
+def _make_ctx(
+    db: AsyncMock | None = None, redis: AsyncMock | None = None
+) -> dict[str, Any]:
     mock_job = MagicMock()
     mock_job.job_id = "child-job-1"
     r = redis or AsyncMock()
@@ -50,7 +54,11 @@ async def test_bulk_generate_enqueues_per_concept_kind() -> None:
     ctx = _make_ctx(db)
 
     result = await bulk_generate(
-        ctx, lesson_id="lesson-1", profile_id="p1", kinds=["relevel"], skip_existing=False
+        ctx,
+        lesson_id="lesson-1",
+        profile_id="p1",
+        kinds=["relevel"],
+        skip_existing=False,
     )
 
     assert result["total"] == 2
@@ -62,11 +70,17 @@ async def test_bulk_generate_skip_existing_omits_already_done() -> None:
 
     db = AsyncMock()
     db.get_lesson_graph.return_value = _graph([_concept("c1"), _concept("c2")])
-    db.get_derived_asset = AsyncMock(side_effect=lambda lid, c, k, p: MagicMock() if c == "c1" else None)
+    db.get_derived_asset = AsyncMock(
+        side_effect=lambda lid, c, k, p: MagicMock() if c == "c1" else None
+    )
     ctx = _make_ctx(db)
 
     result = await bulk_generate(
-        ctx, lesson_id="lesson-1", profile_id="p1", kinds=["relevel"], skip_existing=True
+        ctx,
+        lesson_id="lesson-1",
+        profile_id="p1",
+        kinds=["relevel"],
+        skip_existing=True,
     )
 
     assert result["total"] == 2
@@ -82,7 +96,11 @@ async def test_bulk_generate_skip_existing_false_enqueues_all() -> None:
     ctx = _make_ctx(db)
 
     result = await bulk_generate(
-        ctx, lesson_id="lesson-1", profile_id="p1", kinds=["relevel"], skip_existing=False
+        ctx,
+        lesson_id="lesson-1",
+        profile_id="p1",
+        kinds=["relevel"],
+        skip_existing=False,
     )
 
     assert len(result["child_job_ids"]) == 2
