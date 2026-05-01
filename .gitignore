@@ -21,3 +21,4 @@ docs/artifacts/
 .claude/worktrees
 logs/
 *.log
+data/
