@@ -52,6 +52,35 @@ class DerivedAsset:
     created_at: str
 
 
+@dataclass
+class SourceRow:
+    """Flattened source record with optional linked lesson_id."""
+
+    doc_id: str
+    path: str
+    sha256: str
+    created_at: str
+    lesson_id: str | None
+
+
+@dataclass
+class LessonSummary:
+    """Lesson list row — lesson metadata with aggregated concept count."""
+
+    id: str
+    source_id: str
+    concept_count: int
+    created_at: str
+
+
+@dataclass
+class QuizSummary:
+    """Quiz list row — quiz_id with item count for a lesson."""
+
+    quiz_id: str
+    item_count: int
+
+
 class Database:
     """Thin async wrapper around aiosqlite with schema bootstrapping."""
 
@@ -94,6 +123,50 @@ class Database:
         if row is None:
             return None
         return dict(row)
+
+    async def list_sources(self) -> list[SourceRow]:
+        """Return all sources with the linked lesson_id (NULL if not ingested yet)."""
+        async with self._conn.execute(
+            """
+            SELECT s.doc_id, s.path, s.sha256, s.created_at, l.id AS lesson_id
+            FROM sources s
+            LEFT JOIN lessons l ON l.source_id = s.doc_id
+            ORDER BY s.created_at DESC
+            """
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            SourceRow(
+                doc_id=row["doc_id"],
+                path=row["path"],
+                sha256=row["sha256"],
+                created_at=row["created_at"],
+                lesson_id=row["lesson_id"],
+            )
+            for row in rows
+        ]
+
+    async def get_source_row(self, doc_id: str) -> SourceRow | None:
+        """Return a single SourceRow including linked lesson_id, or None."""
+        async with self._conn.execute(
+            """
+            SELECT s.doc_id, s.path, s.sha256, s.created_at, l.id AS lesson_id
+            FROM sources s
+            LEFT JOIN lessons l ON l.source_id = s.doc_id
+            WHERE s.doc_id = ?
+            """,
+            (doc_id,),
+        ) as cur:
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return SourceRow(
+            doc_id=row["doc_id"],
+            path=row["path"],
+            sha256=row["sha256"],
+            created_at=row["created_at"],
+            lesson_id=row["lesson_id"],
+        )
 
     # ------------------------------------------------------------------
     # LessonGraph persistence
@@ -215,6 +288,28 @@ class Database:
             concepts=concepts,
         )
 
+    async def list_lessons(self) -> list[LessonSummary]:
+        """Return all lessons ordered by creation date descending."""
+        async with self._conn.execute(
+            """
+            SELECT l.id, l.source_id, l.created_at, COUNT(c.id) AS concept_count
+            FROM lessons l
+            LEFT JOIN concepts c ON c.lesson_id = l.id
+            GROUP BY l.id
+            ORDER BY l.created_at DESC
+            """
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            LessonSummary(
+                id=row["id"],
+                source_id=row["source_id"],
+                concept_count=row["concept_count"],
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
     # ------------------------------------------------------------------
     # Learner profiles
     # ------------------------------------------------------------------
@@ -268,6 +363,14 @@ class Database:
             )
             for row in rows
         ]
+
+    async def delete_profile(self, profile_id: str) -> bool:
+        """Delete a profile by id. Returns True if a row was deleted."""
+        cur = await self._conn.execute(
+            "DELETE FROM profiles WHERE id = ?", (profile_id,)
+        )
+        await self._conn.commit()
+        return cur.rowcount > 0
 
     # ------------------------------------------------------------------
     # Assessment items
@@ -556,3 +659,65 @@ class Database:
             file_path=row["file_path"],
             created_at=row["created_at"],
         )
+
+    async def list_derived_assets(
+        self,
+        lesson_id: str,
+        *,
+        concept_id: str | None = None,
+        kind: str | None = None,
+        profile_id: str | None = None,
+    ) -> list[DerivedAsset]:
+        """Return derived assets for a lesson, optionally filtered by concept/kind/profile."""
+        params: list[str] = [lesson_id]
+        where = "WHERE lesson_id = ?"
+        if concept_id is not None:
+            where += " AND concept_id = ?"
+            params.append(concept_id)
+        if kind is not None:
+            where += " AND kind = ?"
+            params.append(kind)
+        if profile_id is not None:
+            where += " AND profile_id = ?"
+            params.append(profile_id)
+        async with self._conn.execute(
+            f"""
+            SELECT id, lesson_id, concept_id, kind, profile_id, file_path, created_at
+            FROM derived_assets
+            {where}
+            ORDER BY created_at DESC
+            """,
+            params,
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            DerivedAsset(
+                id=row["id"],
+                lesson_id=row["lesson_id"],
+                concept_id=row["concept_id"],
+                kind=row["kind"],
+                profile_id=row["profile_id"],
+                file_path=row["file_path"],
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+    async def list_quizzes(self, lesson_id: str) -> list[QuizSummary]:
+        """Return distinct quiz_ids for assessment items belonging to a lesson."""
+        async with self._conn.execute(
+            """
+            SELECT ai.quiz_id, COUNT(ai.id) AS item_count
+            FROM assessment_items ai
+            JOIN concepts c ON c.id = ai.concept_id
+            WHERE c.lesson_id = ? AND ai.quiz_id IS NOT NULL
+            GROUP BY ai.quiz_id
+            ORDER BY MIN(ai.rowid)
+            """,
+            (lesson_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+        return [
+            QuizSummary(quiz_id=row["quiz_id"], item_count=row["item_count"])
+            for row in rows
+        ]

@@ -129,3 +129,58 @@ def test_get_mmd_asset_returns_text_content(tmp_path: Path) -> None:
         response = c.get("/v1/assets/asset-mmd")
     assert response.status_code == 200
     assert "flowchart" in response.text
+
+
+# ---------------------------------------------------------------------------
+# GET /v1/assets/by-key
+# ---------------------------------------------------------------------------
+
+
+def test_get_asset_by_key_returns_stored_asset() -> None:
+    asset = _make_asset()
+    mock_db = AsyncMock()
+    mock_db.get_derived_asset.return_value = asset
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+
+    with TestClient(_app) as c:
+        response = c.get(
+            "/v1/assets/by-key",
+            params={
+                "lesson_id": "lesson-1",
+                "concept_id": "__lesson__",
+                "kind": "slides",
+                "profile_id": "profile-1",
+            },
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["id"] == "asset-1"
+    assert body["lesson_id"] == "lesson-1"
+    assert body["kind"] == "slides"
+    mock_db.get_derived_asset.assert_called_once_with(
+        "lesson-1", "__lesson__", "slides", "profile-1"
+    )
+
+
+def test_get_asset_by_key_not_found_returns_404() -> None:
+    mock_db = AsyncMock()
+    mock_db.get_derived_asset.return_value = None
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_data_dir] = lambda: MagicMock()
+
+    with TestClient(_app) as c:
+        response = c.get(
+            "/v1/assets/by-key",
+            params={
+                "lesson_id": "l1",
+                "concept_id": "c1",
+                "kind": "mnemonic",
+                "profile_id": "p1",
+            },
+        )
+    assert response.status_code == 404

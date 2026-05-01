@@ -18,6 +18,7 @@ from lyw_core.retrieval.embedding import EmbeddingModel
 from lyw_core.retrieval.qdrant import QdrantIndexer
 from lyw_core.settings import Settings
 from lyw_core.storage.fs import DataDir
+from lyw_core.worker.jobs._progress import make_progress
 
 log = structlog.get_logger()
 
@@ -44,16 +45,21 @@ async def ingest_source(
     source_path: str,
     doc_id: str,
 ) -> dict[str, Any]:
+    progress = make_progress(ctx)
     db: Database = ctx["db"]
     bm25: BM25Retriever = ctx["bm25_retriever"]
     qdrant_client: QdrantClient = ctx["qdrant_client"]
     embedding: EmbeddingModel = ctx["embedding"]
+
+    await progress.emit(phase="parse_start", pct=0.0)
 
     if await db.get_source(doc_id) is None:
         sha256 = hashlib.sha256(Path(source_path).read_bytes()).hexdigest()
         await db.add_source(doc_id=doc_id, path=source_path, sha256=sha256)
 
     parsed = DoclingParser().parse(Path(source_path))
+    await progress.emit(phase="parse_done", pct=0.2)
+
     raw_concepts = HeuristicChunker(doc_id=doc_id).chunk(parsed)
 
     # Source fidelity: every concept must trace to at least one source span.
@@ -69,12 +75,17 @@ async def ingest_source(
             )
         else:
             concepts.append(concept)
+    await progress.emit(phase="chunk_done", pct=0.5)
 
     lesson_id = f"lesson_{doc_id}"
     graph = LessonGraph(id=lesson_id, source_id=doc_id, concepts=concepts)
     await db.upsert_lesson_graph(graph)
 
     bm25.index(concepts)
-    QdrantIndexer(client=qdrant_client, embedding=embedding).index(lesson_id, concepts)
+    await progress.emit(phase="index_bm25_done", pct=0.7)
 
-    return {"lesson_id": lesson_id, "concept_count": len(concepts)}
+    QdrantIndexer(client=qdrant_client, embedding=embedding).index(lesson_id, concepts)
+    await progress.emit(phase="index_qdrant_done", pct=0.9)
+
+    result = {"lesson_id": lesson_id, "concept_count": len(concepts)}
+    return await progress.done(result)

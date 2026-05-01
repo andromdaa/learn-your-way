@@ -71,8 +71,8 @@ uv run pytest -m integration       # integration tests (needs Docker + Ollama)
 uv run pre-commit run --all-files  # run all pre-commit hooks
 
 # Run services locally:
-uvicorn lyw_core.api.app:app --reload        # FastAPI dev server — JSON API only (port 8000)
-uvicorn lyw_web.app:app --reload             # FastAPI dev server + browser test UI (port 8000)
+uvicorn lyw_core.api.app:app --reload        # FastAPI JSON API + SPA static serving (port 8000)
+pnpm --dir web dev                           # Vite dev server (port 5173, proxies /v1 → 8000)
 arq lyw_core.worker.settings.WorkerSettings  # Arq ingest worker (needs Redis)
 python -m lyw_core inspect <pdf>             # parse PDF, print concept tree
 
@@ -117,10 +117,10 @@ uvx --with pydantic mypy src/      # mypy needs the pydantic plugin
 ## Packages
 
 - `src/lesson_graph` — domain models (LessonGraph, ConceptNode, AssessmentItem, …). No external services.
-- `src/lyw_core` — ingest pipeline, personalization, generators, FastAPI API, Arq workers, SQLite DAO, settings.
-- `src/lyw_web` — browser test harness UI. Depends on `lyw_core`; `lyw_core` is unaware of `lyw_web`. Launch with `uvicorn lyw_web.app:app`.
+- `src/lyw_core` — ingest pipeline, personalization, generators, FastAPI JSON API, Arq workers, SQLite DAO, settings. Serves the built SPA as static files in production.
+- `web/` — full pipeline test UI (React 18 + Vite + TypeScript + TanStack Query/Router). Dev: `pnpm --dir web dev` on port 5173 (proxies `/v1`, `/healthz`, `/openapi.json` to FastAPI). Prod: `pnpm --dir web build` → FastAPI mounts `web/dist/` at `/` with SPA fallback.
 
-New feature areas belong in their own top-level `src/lyw_<area>/` package. Never expand `lyw_core` with UI, CLI, or other presentation-layer concerns.
+New feature areas that are purely presentation (browser UI) go in `web/`. New feature areas that are API, worker, or domain logic go in `src/lyw_core/` or a new `src/lyw_<area>/` package. Never add HTML/templates/JS to `src/lyw_core/`.
 
 ## Phases
 
