@@ -41,12 +41,24 @@ The original research document driving these specs is preserved at
 ## Development
 
 ```bash
-uv sync --extra dev         # install dependencies (uses uv.lock)
+# Start the full dev stack (API on :8000, Arq worker, Redis, Qdrant, Ollama):
+docker compose up
+
+# Vite dev server (hot-reload UI, proxies /v1 → :8000):
+pnpm --dir web dev
+
+# Python tooling:
+uv sync --extra dev         # install dev tooling (ruff, mypy, pytest-cov)
 uv run ruff check .         # lint
 uv run ruff format .        # format
 uv run mypy                 # type-check (strict)
 uv run pytest --cov         # tests with coverage
 ```
+
+The `docker-compose.override.yaml` (applied automatically) mounts `src/`
+into the running containers so Python changes take effect without rebuilding
+the image. `api` starts with `--reload`; `worker` picks up changes on restart
+(`docker compose restart worker`).
 
 The schema tests in `tests/unit/test_lesson_graph.py` exercise the
 invariants documented in `docs/02-data-model.md`.

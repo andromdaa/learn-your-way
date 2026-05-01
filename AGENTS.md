@@ -70,9 +70,13 @@ uv run pytest --cov                # unit tests + coverage (CI command)
 uv run pytest -m integration       # integration tests (needs Docker + Ollama)
 uv run pre-commit run --all-files  # run all pre-commit hooks
 
-# Run services locally:
-uvicorn lyw_core.api.app:app --reload        # FastAPI JSON API + SPA static serving (port 8000)
+# Run the full backend stack (API + worker + all backing services):
+docker compose up                            # single command — starts all services
+docker compose up --build                    # rebuild Python image after dep changes
 pnpm --dir web dev                           # Vite dev server (port 5173, proxies /v1 → 8000)
+
+# Run services locally (without Docker, for rapid iteration on the Python layer):
+uvicorn lyw_core.api.app:app --reload        # FastAPI JSON API + SPA static serving (port 8000)
 arq lyw_core.worker.settings.WorkerSettings  # Arq ingest worker (needs Redis)
 python -m lyw_core inspect <pdf>             # parse PDF, print concept tree
 

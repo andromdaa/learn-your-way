@@ -54,6 +54,47 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  api:
+    build: .
+    command: uvicorn lyw_core.api.app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - lyw_data:/data
+    environment:
+      - LYW_REDIS_URL=redis://redis:6379/0
+      - LYW_QDRANT_URL=http://qdrant:6333
+      - LYW_OLLAMA_BASE_URL=http://ollama:11434
+      - LYW_DATA_DIR=/data
+      - LYW_DB_PATH=/data/lyw.db
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: arq lyw_core.worker.settings.WorkerSettings
+    volumes:
+      - lyw_data:/data
+    environment:
+      - LYW_REDIS_URL=redis://redis:6379/0
+      - LYW_QDRANT_URL=http://qdrant:6333
+      - LYW_OLLAMA_BASE_URL=http://ollama:11434
+      - LYW_DATA_DIR=/data
+      - LYW_DB_PATH=/data/lyw.db
+    depends_on:
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   ollama_data:
   open_webui_data:
+  lyw_data:
