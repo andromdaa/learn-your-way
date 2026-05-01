@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import MermaidAsset from "./MermaidAsset";
 import type { StoredDerivedAsset } from "../api/hooks/useLessons";
 
 type Props = {
@@ -33,16 +32,6 @@ export default function AssetViewer({ asset }: Props) {
   if (error) return <p style={{ color: "#f87171" }}>Error: {error}</p>;
   if (!content) return null;
 
-  const kind = asset.kind;
-
-  if (kind === "mind_map" || kind === "timeline") {
-    return <MermaidAsset source={content} id={asset.id} />;
-  }
-
-  if (kind === "slides") {
-    return <SlidesViewer raw={content} />;
-  }
-
   return (
     <pre
       style={{
@@ -59,46 +48,5 @@ export default function AssetViewer({ asset }: Props) {
     >
       {content}
     </pre>
-  );
-}
-
-function SlidesViewer({ raw }: { raw: string }) {
-  let deck: { title: string; body: string; speaker_notes?: string }[] = [];
-  try {
-    const parsed = JSON.parse(raw) as {
-      slides?: { title: string; body: string; speaker_notes?: string }[];
-    };
-    deck = parsed.slides ?? [];
-  } catch {
-    return <pre style={{ background: "#1e1e2e", padding: "1rem" }}>{raw}</pre>;
-  }
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      {deck.map((slide, i) => (
-        <article
-          key={i}
-          style={{
-            background: "#1e1e2e",
-            border: "1px solid #333",
-            borderRadius: 6,
-            padding: "0.75rem",
-          }}
-        >
-          <strong style={{ display: "block", marginBottom: "0.4rem" }}>{slide.title}</strong>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "#ccc" }}>{slide.body}</p>
-          {slide.speaker_notes && (
-            <details style={{ marginTop: "0.5rem" }}>
-              <summary style={{ color: "#666", fontSize: "0.8rem", cursor: "pointer" }}>
-                Speaker notes
-              </summary>
-              <p style={{ margin: "0.4rem 0 0", fontSize: "0.8rem", color: "#999" }}>
-                {slide.speaker_notes}
-              </p>
-            </details>
-          )}
-        </article>
-      ))}
-    </div>
   );
 }

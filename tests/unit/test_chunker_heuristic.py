@@ -126,20 +126,6 @@ def test_single_node_has_no_prerequisites() -> None:
     assert nodes[0].prerequisites == []
 
 
-def test_chunk_output_produces_multinode_mindmap() -> None:
-    """Chunked nodes with prerequisites yield a multi-node mind map."""
-    from lesson_graph.models import LessonGraph, PersonalizationProfile
-    from lyw_core.modalities.mindmap import MindMapGenerator
-
-    chunker = HeuristicChunker(doc_id="test-doc")
-    nodes = chunker.chunk(_TINY_DOC)
-    graph = LessonGraph(id="g1", source_id="test-doc", concepts=nodes)
-    profile = PersonalizationProfile(grade_level="8", interests=["science"])
-    out = MindMapGenerator().generate(graph, profile)
-    # Both concepts must appear as nodes in the diagram.
-    assert out.count('["') == 2
-
-
 def _body_only_doc(text: str) -> ParsedDocument:
     """Build a single-block ParsedDocument with no heading, exercising
     HeuristicChunker._make_node's body-fallback title branch.

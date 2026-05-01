@@ -31,11 +31,14 @@ class AttemptRecord:
 
 
 LESSON_SCOPED_CONCEPT_ID: str = "__lesson__"
-"""Sentinel ``concept_id`` for lesson-level generator kinds (``mind_map``, ``timeline``).
+"""Sentinel ``concept_id`` for lesson-level generator kinds.
 
 The ``derived_assets`` table requires ``concept_id TEXT NOT NULL``.  Lesson-level
 generators (which aggregate all or a pruned subset of concepts rather than a
 single concept) use this constant instead of a real concept id.
+
+Currently unused after ADR-0016 (modality generators removed); retained for
+later strip-in-place steps that still reference it.
 """
 
 
@@ -46,7 +49,7 @@ class DerivedAsset:
     id: str
     lesson_id: str
     concept_id: str
-    kind: str  # "relevel" | "replace" | "mnemonic" | "mind_map" | "timeline"
+    kind: str  # "relevel" | "replace" | "mnemonic"
     profile_id: str
     file_path: str
     created_at: str

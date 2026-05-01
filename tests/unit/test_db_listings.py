@@ -221,8 +221,8 @@ async def test_list_derived_assets_filtered_by_kind() -> None:
         DerivedAsset(
             id="a2",
             lesson_id="l1",
-            concept_id="__lesson__",
-            kind="mind_map",
+            concept_id="c2",
+            kind="relevel",
             profile_id="p1",
             file_path="/f",
             created_at="2026-01-01T00:00:00Z",

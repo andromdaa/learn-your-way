@@ -90,8 +90,7 @@ class HeuristicChunker:
         nodes: list[ConceptNode] = []
         for section in sections:
             nodes.extend(self._section_to_nodes(section))
-        # Wire a linear prerequisite chain based on document order so that
-        # MindMapGenerator BFS can traverse the full concept graph.  The first
+        # Wire a linear prerequisite chain based on document order.  The first
         # concept has no prerequisites; each subsequent concept lists its
         # immediate predecessor as its sole prerequisite.
         for i in range(1, len(nodes)):

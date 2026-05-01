@@ -272,7 +272,7 @@ def _profile() -> PersonalizationProfile:
 def test_derived_asset_valid() -> None:
     asset = DerivedAsset(
         id="a1",
-        kind="slides",
+        kind="immersive_text",
         based_on_concepts=["c1"],
         personalization_profile=_profile(),
     )
@@ -283,7 +283,7 @@ def test_derived_asset_requires_concept() -> None:
     with pytest.raises(ValidationError):
         DerivedAsset(
             id="a1",
-            kind="slides",
+            kind="immersive_text",
             based_on_concepts=[],
             personalization_profile=_profile(),
         )
@@ -300,12 +300,21 @@ def test_derived_asset_rejects_audio_lesson_kind() -> None:
         )
 
 
+def test_derived_asset_rejects_modality_kinds() -> None:
+    """Modality kinds were removed per ADR-0016 and must not validate."""
+    for kind in ("slides", "mind_map", "timeline"):
+        with pytest.raises(ValidationError):
+            DerivedAsset(
+                id=f"a-{kind}",
+                kind=kind,
+                based_on_concepts=["c1"],
+                personalization_profile=_profile(),
+            )
+
+
 def test_derived_asset_accepts_all_in_scope_kinds() -> None:
     for kind in (
         "immersive_text",
-        "slides",
-        "mind_map",
-        "timeline",
         "image",
         "mnemonic",
     ):

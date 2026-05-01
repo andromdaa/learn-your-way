@@ -137,22 +137,20 @@ class AssessmentItem(BaseModel):
 
 
 class DerivedAsset(BaseModel):
-    """A modality output (slides, mind map, timeline, etc.).
+    """A generator output (immersive text, mnemonic, etc.).
 
     The asset records which concepts it was based on and the
     personalization profile that produced it. The actual content lives
     behind ``uri`` (local filesystem path).
 
     The ``image`` variant is reserved for a future illustration phase
-    and is not produced in phases 1-3.
+    and is not produced in phases 1-3. Modality kinds (``mind_map``,
+    ``timeline``, ``slides``) were removed per ADR-0016.
     """
 
     id: str
     kind: Literal[
         "immersive_text",
-        "slides",
-        "mind_map",
-        "timeline",
         "image",
         "mnemonic",
     ]
