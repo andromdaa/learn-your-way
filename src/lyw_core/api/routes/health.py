@@ -26,6 +26,7 @@ class HealthResponse(BaseModel):
     qdrant: ServiceHealth
     db: ServiceHealth
     ollama: ServiceHealth
+    model_name: str
 
 
 async def _ping_db(db: Database) -> ServiceHealth:
@@ -70,4 +71,5 @@ async def healthz(
         ),
         db=db_health,
         ollama=ollama_health,
+        model_name=cfg.model_name,
     )

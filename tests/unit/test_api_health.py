@@ -58,6 +58,8 @@ def test_healthz_all_healthy() -> None:
     assert body["qdrant"]["ok"] is True
     assert body["db"]["ok"] is True
     assert body["ollama"]["ok"] is True
+    assert isinstance(body["model_name"], str)
+    assert len(body["model_name"]) > 0
 
 
 def test_healthz_redis_down_returns_200_with_ok_false() -> None:

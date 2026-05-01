@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+_TEST_MODEL = "gemma3:4b"
+
 
 async def test_startup_registers_progress_factory() -> None:
     from lyw_core.worker.settings import startup
@@ -20,7 +22,7 @@ async def test_startup_registers_progress_factory() -> None:
         patch("lyw_core.storage.fs.DataDir", return_value=mock_data_dir),
     ):
         mock_settings.return_value.ollama_base_url = "http://localhost:11434"
-        mock_settings.return_value.model_name = "gemma3:4b"
+        mock_settings.return_value.model_name = _TEST_MODEL
         mock_settings.return_value.data_dir = Path("./data")
         await startup(ctx)
 

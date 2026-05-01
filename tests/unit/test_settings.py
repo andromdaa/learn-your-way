@@ -36,7 +36,7 @@ def test_defaults_when_no_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
     assert s.qdrant_url == "http://localhost:6333"
     assert s.redis_url == "redis://localhost:6379/0"
     assert s.ollama_base_url == "http://localhost:11434"
-    assert s.model_name == "gemma3:4b"
+    assert s.model_name == Settings.model_fields["model_name"].default
     assert s.log_format == "console"
 
 
