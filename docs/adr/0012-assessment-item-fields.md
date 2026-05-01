@@ -1,3 +1,5 @@
+**Status: Superseded by [ADR-0016](0016-phase-2-3-scope-reduction.md) (2026-05-01).**
+
 # ADR-0012: AssessmentItem.correct_answer and bloom_level Fields
 
 ## Status

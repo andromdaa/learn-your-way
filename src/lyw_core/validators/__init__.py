@@ -1,5 +1,4 @@
 from .base import ValidationError, ValidationResult, Validator, run_validators
-from .clarity import ClarityValidator
 from .faithfulness import (
     ItemValidationPayload,
     SourceFaithfulnessValidator,
@@ -7,7 +6,6 @@ from .faithfulness import (
 )
 
 __all__ = [
-    "ClarityValidator",
     "ItemValidationPayload",
     "SourceFaithfulnessValidator",
     "ValidationError",

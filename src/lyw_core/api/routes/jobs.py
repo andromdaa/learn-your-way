@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated, Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Annotated, Any
 
 from arq.connections import ArqRedis
 from arq.jobs import Job, JobStatus
@@ -95,10 +96,10 @@ async def get_job_result(
     info = await job.info()
     if info is None:
         return JobResultResponse(status="complete")
-    if info.success:
-        return JobResultResponse(status="complete", result=info.result)
+    if info.success:  # type: ignore[attr-defined]
+        return JobResultResponse(status="complete", result=info.result)  # type: ignore[attr-defined]
     return JobResultResponse(
         status="failed",
-        error=str(info.result) if info.result is not None else None,
-        traceback=info.traceback,
+        error=str(info.result) if info.result is not None else None,  # type: ignore[attr-defined]
+        traceback=info.traceback,  # type: ignore[attr-defined]
     )

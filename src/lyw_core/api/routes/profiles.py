@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 
 from lyw_core.api.app import get_db
-from lyw_core.db.dao import AttemptRecord, Database
+from lyw_core.db.dao import Database
 from lyw_core.profiles.models import LearnerProfile
 
 router = APIRouter()
@@ -26,15 +26,6 @@ class CreateProfileRequest(BaseModel):
         if not v.strip():
             raise ValueError("grade_level must not be empty")
         return v
-
-
-class AttemptResponse(BaseModel):
-    id: str
-    profile_id: str
-    item_id: str
-    response: str
-    correct: bool
-    attempted_at: str
 
 
 @router.get(
@@ -117,17 +108,3 @@ async def delete_profile(
     deleted = await db.delete_profile(profile_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Profile not found")
-
-
-@router.get(
-    "/profiles/{profile_id}/attempts",
-    response_model=list[AttemptResponse],
-    operation_id="listProfileAttempts",
-)
-async def list_profile_attempts(
-    profile_id: str,
-    db: Annotated[Database, Depends(get_db)],
-) -> list[AttemptRecord]:
-    if await db.get_profile(profile_id) is None:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return await db.get_profile_attempts(profile_id)

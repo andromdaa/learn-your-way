@@ -53,8 +53,8 @@ def _section_body_chars(section: list[ParsedBlock]) -> int:
         return 0
     body = section[1:] if section[0].block_type in _HEADING_TYPES else section
     return sum(b.char_end - b.char_start for b in body)
-  
-  
+
+
 def _truncate_title(text: str) -> str:
     """Truncate body-fallback title at the last word boundary within the
     first ``_MAX_TITLE_FALLBACK`` characters, appending an ellipsis.

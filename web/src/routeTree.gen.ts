@@ -16,7 +16,6 @@ import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SourcesDocIdRouteImport } from './routes/sources.$docId'
-import { Route as QuizzesQuizIdRouteImport } from './routes/quizzes.$quizId'
 import { Route as LessonsLessonIdRouteImport } from './routes/lessons.$lessonId'
 
 const SourcesRoute = SourcesRouteImport.update({
@@ -54,11 +53,6 @@ const SourcesDocIdRoute = SourcesDocIdRouteImport.update({
   path: '/$docId',
   getParentRoute: () => SourcesRoute,
 } as any)
-const QuizzesQuizIdRoute = QuizzesQuizIdRouteImport.update({
-  id: '/quizzes/$quizId',
-  path: '/quizzes/$quizId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LessonsLessonIdRoute = LessonsLessonIdRouteImport.update({
   id: '/$lessonId',
   path: '/$lessonId',
@@ -73,7 +67,6 @@ export interface FileRoutesByFullPath {
   '/profiles': typeof ProfilesRoute
   '/sources': typeof SourcesRouteWithChildren
   '/lessons/$lessonId': typeof LessonsLessonIdRoute
-  '/quizzes/$quizId': typeof QuizzesQuizIdRoute
   '/sources/$docId': typeof SourcesDocIdRoute
 }
 export interface FileRoutesByTo {
@@ -84,7 +77,6 @@ export interface FileRoutesByTo {
   '/profiles': typeof ProfilesRoute
   '/sources': typeof SourcesRouteWithChildren
   '/lessons/$lessonId': typeof LessonsLessonIdRoute
-  '/quizzes/$quizId': typeof QuizzesQuizIdRoute
   '/sources/$docId': typeof SourcesDocIdRoute
 }
 export interface FileRoutesById {
@@ -96,7 +88,6 @@ export interface FileRoutesById {
   '/profiles': typeof ProfilesRoute
   '/sources': typeof SourcesRouteWithChildren
   '/lessons/$lessonId': typeof LessonsLessonIdRoute
-  '/quizzes/$quizId': typeof QuizzesQuizIdRoute
   '/sources/$docId': typeof SourcesDocIdRoute
 }
 export interface FileRouteTypes {
@@ -109,7 +100,6 @@ export interface FileRouteTypes {
     | '/profiles'
     | '/sources'
     | '/lessons/$lessonId'
-    | '/quizzes/$quizId'
     | '/sources/$docId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -120,7 +110,6 @@ export interface FileRouteTypes {
     | '/profiles'
     | '/sources'
     | '/lessons/$lessonId'
-    | '/quizzes/$quizId'
     | '/sources/$docId'
   id:
     | '__root__'
@@ -131,7 +120,6 @@ export interface FileRouteTypes {
     | '/profiles'
     | '/sources'
     | '/lessons/$lessonId'
-    | '/quizzes/$quizId'
     | '/sources/$docId'
   fileRoutesById: FileRoutesById
 }
@@ -142,7 +130,6 @@ export interface RootRouteChildren {
   LessonsRoute: typeof LessonsRouteWithChildren
   ProfilesRoute: typeof ProfilesRoute
   SourcesRoute: typeof SourcesRouteWithChildren
-  QuizzesQuizIdRoute: typeof QuizzesQuizIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -196,13 +183,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesDocIdRouteImport
       parentRoute: typeof SourcesRoute
     }
-    '/quizzes/$quizId': {
-      id: '/quizzes/$quizId'
-      path: '/quizzes/$quizId'
-      fullPath: '/quizzes/$quizId'
-      preLoaderRoute: typeof QuizzesQuizIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/lessons/$lessonId': {
       id: '/lessons/$lessonId'
       path: '/$lessonId'
@@ -242,7 +222,6 @@ const rootRouteChildren: RootRouteChildren = {
   LessonsRoute: LessonsRouteWithChildren,
   ProfilesRoute: ProfilesRoute,
   SourcesRoute: SourcesRouteWithChildren,
-  QuizzesQuizIdRoute: QuizzesQuizIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

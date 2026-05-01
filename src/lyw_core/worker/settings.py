@@ -12,7 +12,6 @@ from lyw_core.worker.jobs.ingest import ingest_source
 from lyw_core.worker.jobs.ingest import shutdown as _ingest_shutdown
 from lyw_core.worker.jobs.ingest import startup as _ingest_startup
 from lyw_core.worker.jobs.personalize import personalize_concept
-from lyw_core.worker.jobs.quiz import generate_quiz
 
 
 def _redis_settings() -> RedisSettings:
@@ -52,7 +51,6 @@ class WorkerSettings:
     functions: ClassVar[list[Callable[..., object]]] = [
         ingest_source,
         personalize_concept,
-        generate_quiz,
         bulk_generate,
     ]
     on_startup = startup

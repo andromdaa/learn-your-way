@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, patch
-
-import pytest
+from unittest.mock import AsyncMock
 
 from lyw_core.worker.jobs._progress import JobProgress, NoopProgress, make_progress
-
 
 # ---------------------------------------------------------------------------
 # NoopProgress — just verifies it accepts all calls without error
@@ -17,14 +14,12 @@ from lyw_core.worker.jobs._progress import JobProgress, NoopProgress, make_progr
 
 async def test_noop_progress_emit_returns_none() -> None:
     p = NoopProgress()
-    result = await p.emit(phase="test", pct=0.5)
-    assert result is None
+    await p.emit(phase="test", pct=0.5)
 
 
 async def test_noop_progress_fail_returns_none() -> None:
     p = NoopProgress()
-    result = await p.fail("boom", traceback="tb")
-    assert result is None
+    await p.fail("boom", traceback="tb")
 
 
 async def test_noop_progress_done_returns_result() -> None:
@@ -39,7 +34,7 @@ async def test_noop_progress_done_returns_result() -> None:
 
 
 async def test_make_progress_without_factory_returns_noop() -> None:
-    ctx: dict = {}
+    ctx: dict[str, object] = {}
     p = make_progress(ctx)
     assert isinstance(p, NoopProgress)
 

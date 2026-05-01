@@ -54,13 +54,11 @@ def get_parsed_doc_cache(request: Request) -> dict[str, ParsedDocument]:
 def create_app(
     lifespan: Callable[..., Any] = _default_lifespan,
 ) -> FastAPI:
-    from lyw_core.api.routes.attempts import router as attempts_router
     from lyw_core.api.routes.generate import router as generate_router
     from lyw_core.api.routes.health import router as health_router
     from lyw_core.api.routes.jobs import router as jobs_router
     from lyw_core.api.routes.lessons import router as lessons_router
     from lyw_core.api.routes.profiles import router as profiles_router
-    from lyw_core.api.routes.quizzes import router as quizzes_router
     from lyw_core.api.routes.sources import router as sources_router
 
     app = FastAPI(
@@ -77,9 +75,7 @@ def create_app(
     app.include_router(sources_router)
     app.include_router(lessons_router)
     app.include_router(profiles_router)
-    app.include_router(attempts_router)
     app.include_router(generate_router)
-    app.include_router(quizzes_router)
     app.include_router(jobs_router)
     app.include_router(health_router)
 

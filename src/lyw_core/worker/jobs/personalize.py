@@ -7,7 +7,6 @@ from typing import Any
 
 import structlog
 
-from lyw_core.assessment.mnemonic import MnemonicGenerator
 from lyw_core.db.dao import Database, DerivedAsset
 from lyw_core.personalization.relevel import ReLeveler
 from lyw_core.personalization.replace import ExampleReplacer
@@ -17,7 +16,7 @@ from lyw_core.worker.jobs._progress import make_progress
 
 _logger = structlog.get_logger(__name__)
 
-_VALID_KINDS = frozenset({"relevel", "replace", "mnemonic"})
+_VALID_KINDS = frozenset({"relevel", "replace"})
 
 
 async def personalize_concept(
@@ -59,26 +58,17 @@ async def personalize_concept(
 
     faithfulness = SourceFaithfulnessValidator()
 
-    if kind == "mnemonic":
-        gen = MnemonicGenerator(
-            model_client=model_client,
-            faithfulness_validator=faithfulness,
-        )
-        result = await gen.generate(concept, lesson_graph)
-        content = result.text
-    elif kind == "relevel":
-        profile = await db.get_profile(profile_id)
-        if profile is None:
-            raise ValueError(f"profile not found: {profile_id!r}")
+    profile = await db.get_profile(profile_id)
+    if profile is None:
+        raise ValueError(f"profile not found: {profile_id!r}")
+
+    if kind == "relevel":
         gen_relevel = ReLeveler(
             model_client=model_client,
             faithfulness_validator=faithfulness,
         )
         content, _ = await gen_relevel.relevel(concept, profile, lesson_graph)
     else:  # replace
-        profile = await db.get_profile(profile_id)
-        if profile is None:
-            raise ValueError(f"profile not found: {profile_id!r}")
         gen_replace = ExampleReplacer(
             model_client=model_client,
             faithfulness_validator=faithfulness,

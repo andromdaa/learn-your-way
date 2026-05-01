@@ -21,10 +21,10 @@ try:
 except ImportError:
     _HAVE_TESTCONTAINERS = False
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from fastapi import FastAPI  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
-from lyw_core.api.app import create_app, get_arq_redis, get_db
+from lyw_core.api.app import create_app, get_arq_redis, get_db  # noqa: E402
 
 
 @asynccontextmanager
@@ -68,7 +68,7 @@ def test_sse_job_events_content_type_with_real_redis(redis_container_url: str) -
         def pubsub(self) -> Any:
             return self._r.pubsub()
 
-    async def _setup() -> "_FakeArq":
+    async def _setup() -> _FakeArq:
         r = await aioredis.from_url(redis_container_url)
         return _FakeArq(r)
 
@@ -93,7 +93,7 @@ def test_sse_job_events_content_type_with_real_redis(redis_container_url: str) -
     t = threading.Thread(target=_publish, daemon=True)
     t.start()
 
-    with _make_client(arq) as c:
+    with _make_client(arq) as c:  # noqa: SIM117
         with c.stream("GET", "/v1/jobs/sse-test-job/events") as resp:
             assert resp.headers["content-type"].startswith("text/event-stream")
             lines = list(resp.iter_lines())
@@ -115,7 +115,7 @@ def test_sse_global_events_content_type_with_real_redis(redis_container_url: str
         def pubsub(self) -> Any:
             return self._r.pubsub()
 
-    async def _setup() -> "_FakeArq":
+    async def _setup() -> _FakeArq:
         r = await aioredis.from_url(redis_container_url)
         return _FakeArq(r)
 
@@ -139,8 +139,7 @@ def test_sse_global_events_content_type_with_real_redis(redis_container_url: str
     t = threading.Thread(target=_publish, daemon=True)
     t.start()
 
-    with _make_client(arq) as c:
-        with c.stream("GET", "/v1/jobs/events") as resp:
-            assert resp.headers["content-type"].startswith("text/event-stream")
+    with _make_client(arq) as c, c.stream("GET", "/v1/jobs/events") as resp:
+        assert resp.headers["content-type"].startswith("text/event-stream")
 
     t.join(timeout=2)

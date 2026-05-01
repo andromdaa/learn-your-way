@@ -8,7 +8,6 @@ Invariants:
 - Every ConceptNode has at least one SourceSpan.
 - Every SourceSpan resolves to valid character offsets in its
   referenced document.
-- Every AssessmentItem references at least one SourceSpan.
 - Every DerivedAsset references at least one concept in
   based_on_concepts.
 
@@ -95,65 +94,23 @@ class ConceptNode(BaseModel):
         description="Ordered by priority; the gap detector treats index 0 as the highest-priority prerequisite.",
     )
     provenance: Literal["heuristic", "llm_refined"] = "heuristic"
-    temporal_position: int | None = Field(
-        default=None,
-        description=(
-            "Integer ordering rank for chronologically structured content. "
-            "None means the concept has no temporal position (unordered or not applicable). "
-            "Negative values are valid for BC dates or relative pre-epoch ordering. "
-            "Used by the timeline generator to identify and sort chronological concepts."
-        ),
-    )
-
-
-class AssessmentItem(BaseModel):
-    """A single quiz or embedded question.
-
-    Every item carries source spans backing its rationale. Generators
-    that produce items without resolvable spans must have those items
-    discarded by the validator before persistence.
-    """
-
-    id: str
-    kind: Literal["mcq", "matching", "short_answer", "drag_drop_timeline"]
-    prompt: str
-    rationale: str
-    source_spans: list[SourceSpan] = Field(min_length=1)
-    difficulty: Literal["easy", "medium", "hard"]
-    concept_id: str
-    correct_answer: str | None = None
-    bloom_level: (
-        Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
-        | None
-    ) = None
-    quiz_id: str | None = None
-
-    @field_validator("concept_id")
-    @classmethod
-    def _concept_id_not_empty(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("concept_id must not be empty")
-        return v
 
 
 class DerivedAsset(BaseModel):
-    """A generator output (immersive text, mnemonic, etc.).
+    """A generator output (immersive text from relevel/replace).
 
     The asset records which concepts it was based on and the
     personalization profile that produced it. The actual content lives
     behind ``uri`` (local filesystem path).
 
-    The ``image`` variant is reserved for a future illustration phase
-    and is not produced in phases 1-3. Modality kinds (``mind_map``,
-    ``timeline``, ``slides``) were removed per ADR-0016.
+    Per ADR-0016, only ``immersive_text`` remains — modality kinds
+    (``mind_map``, ``timeline``, ``slides``) and Phase-2 kinds
+    (``mnemonic``) were removed. Kept as a single-value Literal for
+    forward-compat; step 5 may replace it with a plain ``str``.
     """
 
     id: str
-    kind: Literal[
-        "immersive_text",
-        "image",
-        "mnemonic",
-    ]
+    kind: Literal["immersive_text"]
     based_on_concepts: list[str] = Field(min_length=1)
     personalization_profile: PersonalizationProfile
     uri: str | None = None

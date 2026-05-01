@@ -16,7 +16,6 @@ from pydantic import BaseModel, ValidationError
 
 from lesson_graph.interfaces import ModelClient
 from lesson_graph.models import (
-    AssessmentItem,
     ConceptNode,
     LessonGraph,
     ReplacementRecord,
@@ -160,17 +159,12 @@ class ExampleReplacer:
                 )
                 continue
 
-            check_item = AssessmentItem(
-                id=f"__replace_check_{index}__",
-                kind="short_answer",
-                prompt=cand.original_text[:200] or concept.summary[:200],
-                rationale="faithfulness gate for example replacement",
-                source_spans=[original_span],
-                difficulty="easy",
-                concept_id=concept.id,
-            )
             result = self._faithfulness.validate(
-                ItemValidationPayload(item=check_item, lesson_graph=lesson_graph)
+                ItemValidationPayload(
+                    concept_id=concept.id,
+                    spans=[original_span],
+                    lesson_graph=lesson_graph,
+                )
             )
             if not result.passed:
                 _logger.warning(
