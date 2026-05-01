@@ -1,0 +1,10 @@
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #0f0f14; color: #e2e8f0; }
+#root { height: 100dvh; }
+a { color: #60a5fa; text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1 { font-size: 1.75rem; margin: 0 0 1rem; }
+h2 { font-size: 1.25rem; margin: 0 0 0.75rem; }
+h3 { font-size: 1rem; margin: 0 0 0.5rem; }
+button { cursor: pointer; }
+input, textarea { background: #1e1e2e; border: 1px solid #444; color: #e2e8f0; border-radius: 4px; }

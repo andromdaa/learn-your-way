@@ -11,8 +11,11 @@ from arq.connections import ArqRedis, RedisSettings
 from fastapi import FastAPI, Request
 
 from lyw_core.db.dao import Database
+from lyw_core.parser.models import ParsedDocument
 from lyw_core.settings import Settings
 from lyw_core.storage.fs import DataDir
+
+_PARSED_DOC_CACHE_SIZE = 16
 
 
 @asynccontextmanager
@@ -22,6 +25,7 @@ async def _default_lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.data_dir = DataDir(cfg.data_dir)
     app.state.data_dir.bootstrap()
     app.state.arq_redis = await arq.create_pool(RedisSettings.from_dsn(cfg.redis_url))
+    app.state.parsed_doc_cache = {}
     yield
     await app.state.db.close()
     await app.state.arq_redis.close()
@@ -42,14 +46,22 @@ def get_arq_redis(request: Request) -> ArqRedis:
     return arq_redis
 
 
+def get_parsed_doc_cache(request: Request) -> dict[str, ParsedDocument]:
+    cache: dict[str, ParsedDocument] = request.app.state.parsed_doc_cache
+    return cache
+
+
 def create_app(
     lifespan: Callable[..., Any] = _default_lifespan,
 ) -> FastAPI:
     from lyw_core.api.routes.assets import router as assets_router
     from lyw_core.api.routes.attempts import router as attempts_router
     from lyw_core.api.routes.generate import router as generate_router
+    from lyw_core.api.routes.health import router as health_router
+    from lyw_core.api.routes.jobs import router as jobs_router
     from lyw_core.api.routes.lessons import router as lessons_router
     from lyw_core.api.routes.profiles import router as profiles_router
+    from lyw_core.api.routes.quizzes import router as quizzes_router
     from lyw_core.api.routes.sources import router as sources_router
 
     app = FastAPI(
@@ -68,7 +80,14 @@ def create_app(
     app.include_router(profiles_router)
     app.include_router(attempts_router)
     app.include_router(generate_router)
+    app.include_router(quizzes_router)
     app.include_router(assets_router)
+    app.include_router(jobs_router)
+    app.include_router(health_router)
+
+    from lyw_core.api.static import mount_spa
+
+    mount_spa(app)
     return app
 
 

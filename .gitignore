@@ -22,3 +22,6 @@ docs/artifacts/
 logs/
 *.log
 data/
+web/node_modules/
+web/dist/
+web/.pnpm-approved-builds.json

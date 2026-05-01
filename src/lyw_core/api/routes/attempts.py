@@ -32,6 +32,7 @@ class AttemptRequest(BaseModel):
     profile_id: str
     item_id: str
     response: str
+    defer_glows_grows: bool = False
 
 
 class AttemptFeedback(BaseModel):
@@ -109,7 +110,7 @@ async def record_attempt(
     # Glows-Grows: only for quiz items with a correct_answer (auto-evaluable).
     glows: str | None = None
     grows: str | None = None
-    if item.quiz_id is not None and not is_manual_eval:
+    if item.quiz_id is not None and not is_manual_eval and not body.defer_glows_grows:
         try:
             settings = Settings()
             model_client = OllamaModelClient(

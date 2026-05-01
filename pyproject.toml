@@ -17,6 +17,7 @@ dependencies = [
     "qdrant-client>=1.17.1",
     "redis[hiredis]>=7.4.0",
     "sentence-transformers>=5.4.1",
+    "sse-starlette>=3.4.1",
     "structlog>=25.5.0",
     "textstat>=0.7,<0.8",
     "uvicorn>=0.46.0",
@@ -38,7 +39,6 @@ build-backend = "hatchling.build"
 packages = [
     "src/lesson_graph",
     "src/lyw_core",
-    "src/lyw_web",
 ]
 
 # ----- Tooling configuration ------------------------------------------------
@@ -71,7 +71,7 @@ quote-style = "double"
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["src/lyw_core", "src/lyw_web", "src/lesson_graph", "tests"]
+files = ["src/lyw_core", "src/lesson_graph", "tests"]
 plugins = ["pydantic.mypy"]
 warn_unused_ignores = true
 warn_redundant_casts = true

@@ -8,6 +8,7 @@ from typing import Any
 import structlog
 
 from lyw_core.assessment.mnemonic import MnemonicGenerator
+from lyw_core.worker.jobs._progress import make_progress
 from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID, Database, DerivedAsset
 from lyw_core.modalities.mindmap import MindMapGenerator
 from lyw_core.modalities.slides import SlideGenerator
@@ -57,6 +58,9 @@ async def personalize_concept(
     """
     if kind not in _VALID_KINDS:
         raise ValueError(f"kind must be one of {sorted(_VALID_KINDS)!r}, got {kind!r}")
+
+    progress = make_progress(ctx, lesson_id=lesson_id)
+    await progress.emit(phase="kind_resolved", pct=0.0, data={"kind": kind})
 
     db: Database = ctx["db"]
     data_dir: DataDir = ctx["data_dir"]
@@ -204,4 +208,5 @@ async def personalize_concept(
         profile_id=profile_id,
         file_path=str(file_path),
     )
-    return {"asset_id": asset_id, "file_path": str(file_path)}
+    result = {"asset_id": asset_id, "file_path": str(file_path)}
+    return await progress.done(result)

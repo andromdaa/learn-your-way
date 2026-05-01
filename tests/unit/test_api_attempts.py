@@ -201,3 +201,34 @@ def test_attempt_feedback_schema_accepts_glows_grows_strings() -> None:
     )
     assert feedback.glows == "Well done on the quiz."
     assert feedback.grows == "Review topic X."
+
+
+# ---------------------------------------------------------------------------
+# defer_glows_grows flag: skips inline G/G generation
+# ---------------------------------------------------------------------------
+
+
+def test_post_attempts_defer_glows_grows_returns_null_glows_grows() -> None:
+    """When defer_glows_grows=True on a quiz item, glows/grows must be null."""
+    item = _mcq_item(quiz_id="quiz-abc")
+    mock_db = AsyncMock()
+    mock_db.get_item_by_id.return_value = item
+    mock_db.record_attempt.return_value = None
+    mock_db.get_lesson_id_by_concept_id.return_value = "lesson-1"
+    mock_db.get_lesson_graph.return_value = _graph()
+    mock_db.get_profile_attempts.return_value = []
+
+    with TestClient(_make_app(mock_db)) as c:
+        response = c.post(
+            "/attempts",
+            json={
+                "profile_id": "p1",
+                "item_id": "item-1",
+                "response": "Paris",
+                "defer_glows_grows": True,
+            },
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["glows"] is None
+    assert body["grows"] is None
