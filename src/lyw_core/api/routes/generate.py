@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from lyw_core.api.app import get_arq_redis, get_db
 from lyw_core.db.dao import Database
+from lyw_core.worker.result import Failure, Success
 
 router = APIRouter()
 
@@ -95,6 +96,11 @@ async def get_generate_result(
     Returns ``status="pending"`` while the job is still running,
     ``status="complete"`` with the ``result`` payload when finished,
     and ``status="not_found"`` when no such job exists.
+
+    The job returns a typed Success | Failure discriminated union. A Failure
+    result (domain error, e.g. thin_source, ollama_error) maps to
+    ``status="failed"``; unexpected exceptions (info.success=False) also map
+    to ``status="failed"`` as a fallback.
     """
     job = Job(job_id=job_id, redis=arq_redis)
     job_status: JobStatus = await job.status()
@@ -108,15 +114,33 @@ async def get_generate_result(
     # Job is complete — retrieve the stored result payload
     info = await job.result_info()
 
-    if info is not None and not info.success:
+    if info is None:
+        return GenerateResultResponse(job_id=job_id, status="complete")
+
+    if not info.success:
+        # Unexpected exception not wrapped by the job (e.g. infrastructure error).
         return GenerateResultResponse(
             job_id=job_id,
             status="failed",
             result={"error": repr(info.result)},
         )
 
-    result: dict[str, Any] | None = None
-    if info is not None and info.result is not None:
-        result = dict(info.result)
+    # info.result is Success | Failure — read as a discriminated union.
+    outcome = info.result
+    if isinstance(outcome, Failure):
+        return GenerateResultResponse(
+            job_id=job_id,
+            status="failed",
+            result={"code": outcome.code, "error": outcome.message, **outcome.details},
+        )
 
+    if isinstance(outcome, Success):
+        return GenerateResultResponse(
+            job_id=job_id,
+            status="complete",
+            result=dict(outcome.payload),
+        )
+
+    # Fallback: plain dict result from a legacy job run before this migration.
+    result: dict[str, Any] | None = dict(outcome) if isinstance(outcome, dict) else None
     return GenerateResultResponse(job_id=job_id, status="complete", result=result)

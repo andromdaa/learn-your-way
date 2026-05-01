@@ -17,18 +17,6 @@ from lyw_core.profiles.models import LearnerProfile
 log = structlog.get_logger()
 
 
-LESSON_SCOPED_CONCEPT_ID: str = "__lesson__"
-"""Sentinel ``concept_id`` for lesson-level generator kinds.
-
-The ``derived_assets`` table requires ``concept_id TEXT NOT NULL``. Lesson-level
-generators (which aggregate all or a pruned subset of concepts rather than a
-single concept) use this constant instead of a real concept id.
-
-Currently unused after ADR-0016 (modality + assessment generators removed);
-retained for the step-5 cleanup that finally removes the constant.
-"""
-
-
 @dataclass
 class DerivedAsset:
     """Metadata for a generator output persisted to the content-addressed store."""

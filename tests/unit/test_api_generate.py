@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 from lesson_graph import ConceptNode, LessonGraph, SourceSpan
 from lyw_core.api.app import create_app, get_arq_redis, get_db
+from lyw_core.worker.result import Failure, Success
 
 
 @asynccontextmanager
@@ -270,15 +271,18 @@ def test_get_generate_result_not_found() -> None:
     assert body["result"] is None
 
 
-def test_get_generate_result_complete_with_payload() -> None:
-    """A complete job returns status=complete and the result dict."""
+def test_get_generate_result_complete_with_typed_success() -> None:
+    """A complete job returning Success returns status=complete and result payload."""
     import unittest.mock as _mock
 
     mock_db = AsyncMock()
     mock_arq = AsyncMock()
 
     mock_result_info = MagicMock()
-    mock_result_info.result = {"asset_id": "a1", "file_path": "/data/assets/x.txt"}
+    mock_result_info.success = True
+    mock_result_info.result = Success(
+        payload={"asset_id": "a1", "file_path": "/data/assets/x.txt"}
+    )
 
     mock_job = AsyncMock()
     mock_job.status = AsyncMock(return_value=JobStatus.complete)
@@ -328,28 +332,28 @@ def test_get_generate_result_complete_no_result_info() -> None:
     assert body["result"] is None
 
 
-def test_get_generate_result_failed_with_validation_error() -> None:
-    """When the job raised a ValidationError, endpoint returns status=failed with error repr."""
+def test_get_generate_result_failed_with_typed_failure_validation() -> None:
+    """When the job returned Failure(code=validation_failed), endpoint returns status=failed.
+
+    This test explicitly exercises the custom lyw_core.validators.base.ValidationError
+    failure path (not pydantic.ValidationError — those are different classes).
+    The job catches the custom ValidationError and converts it to a typed Failure;
+    no exception crosses the Arq pickle boundary.
+    """
     import unittest.mock as _mock
-
-    from pydantic import BaseModel as _PydanticBase
-    from pydantic import ValidationError
-
-    # Construct a real ValidationError via a Pydantic model
-    class _M(_PydanticBase):
-        x: int
-
-    try:
-        _M(x="not-an-int")
-    except ValidationError as exc:
-        raised_exc = exc
 
     mock_db = AsyncMock()
     mock_arq = AsyncMock()
 
+    typed_failure = Failure(
+        code="validation_failed",
+        message="source faithfulness check failed; span outside concept source range",
+        details={"reasons": ["span outside concept source range"]},
+    )
+
     mock_result_info = MagicMock()
-    mock_result_info.success = False
-    mock_result_info.result = raised_exc
+    mock_result_info.success = True  # job returned normally — no exception raised
+    mock_result_info.result = typed_failure
 
     mock_job = AsyncMock()
     mock_job.status = AsyncMock(return_value=JobStatus.complete)
@@ -369,12 +373,55 @@ def test_get_generate_result_failed_with_validation_error() -> None:
     body = response.json()
     assert body["status"] == "failed"
     assert body["job_id"] == "job-failed"
+    assert body["result"]["code"] == "validation_failed"
     assert "error" in body["result"]
-    assert "validation error" in body["result"]["error"].lower()
+    assert "faithfulness" in body["result"]["error"]
 
 
-def test_get_generate_result_failed_with_arbitrary_exception() -> None:
-    """When the job raised an arbitrary exception, endpoint returns status=failed."""
+def test_get_generate_result_failed_with_typed_failure_thin_source() -> None:
+    """When the job returned Failure(code=thin_source), endpoint returns status=failed."""
+    import unittest.mock as _mock
+
+    mock_db = AsyncMock()
+    mock_arq = AsyncMock()
+
+    typed_failure = Failure(
+        code="thin_source",
+        message="concept 'c1' summary too thin for replace generator: 10 chars, 2 words",
+        details={"concept_id": "c1", "char_count": 10, "word_count": 2},
+    )
+
+    mock_result_info = MagicMock()
+    mock_result_info.success = True
+    mock_result_info.result = typed_failure
+
+    mock_job = AsyncMock()
+    mock_job.status = AsyncMock(return_value=JobStatus.complete)
+    mock_job.result_info = AsyncMock(return_value=mock_result_info)
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_arq_redis] = lambda: mock_arq
+
+    with (
+        _mock.patch("lyw_core.api.routes.generate.Job", return_value=mock_job),
+        TestClient(_app) as c,
+    ):
+        response = c.get("/lessons/lesson-1/generate/job-thin")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "failed"
+    assert body["result"]["code"] == "thin_source"
+    assert body["result"]["concept_id"] == "c1"
+
+
+def test_get_generate_result_failed_with_unexpected_exception() -> None:
+    """When the job raised an unexpected exception (info.success=False), endpoint returns status=failed.
+
+    This path covers infrastructure errors (DB down, OOM, etc.) that were not
+    wrapped by the job boundary — distinct from typed Failure returns.
+    """
     import unittest.mock as _mock
 
     mock_db = AsyncMock()

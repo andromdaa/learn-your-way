@@ -64,13 +64,17 @@ async def create_source(
     dest = data_dir.write_source(filename, data)
     if await db.get_source(doc_id) is None:
         await db.add_source(doc_id=doc_id, path=str(dest), sha256=sha256)
-    job = await arq_redis.enqueue_job("ingest_source", source_path=str(dest), doc_id=doc_id)
+    job = await arq_redis.enqueue_job(
+        "ingest_source", source_path=str(dest), doc_id=doc_id
+    )
     job_id: str | None = None
     if job is not None:
         raw_id = getattr(job, "job_id", None)
         if isinstance(raw_id, str):
             job_id = raw_id
-    body = SourceResponse(id=doc_id, title=title or filename, status="parsing", job_id=job_id)
+    body = SourceResponse(
+        id=doc_id, title=title or filename, status="parsing", job_id=job_id
+    )
     return JSONResponse(content=body.model_dump(), status_code=202)
 
 

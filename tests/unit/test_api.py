@@ -240,4 +240,3 @@ def test_post_profiles_in_openapi_schema(client: TestClient) -> None:
     schema = client.get("/openapi.json").json()
     assert "/profiles" in schema["paths"]
     assert "post" in schema["paths"]["/profiles"]
-

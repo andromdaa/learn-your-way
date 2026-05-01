@@ -15,11 +15,6 @@ class OllamaError(Exception):
         self.body = body
         super().__init__(f"Ollama returned HTTP {status_code}: {body[:200]}")
 
-    def __reduce__(self) -> tuple[Any, tuple[int, str]]:
-        # Pickle protocol: ensure round-trip through Arq's result store
-        # reconstructs the exception with both required positional args.
-        return (self.__class__, (self.status_code, self.body))
-
 
 class OllamaModelClient:
     """Async chat-completion client for a local Ollama instance.

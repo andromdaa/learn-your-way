@@ -41,8 +41,13 @@ def test_healthz_all_healthy() -> None:
 
     with (  # noqa: SIM117
         patch("lyw_core.api.routes.health.ping_redis", return_value=_healthy("redis")),
-        patch("lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")),
-        patch("lyw_core.api.routes.health._ping_ollama", return_value=ServiceHealth(ok=True)),
+        patch(
+            "lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")
+        ),
+        patch(
+            "lyw_core.api.routes.health._ping_ollama",
+            return_value=ServiceHealth(ok=True),
+        ),
     ):
         with _make_client(mock_db) as c:
             response = c.get("/healthz")
@@ -61,9 +66,16 @@ def test_healthz_redis_down_returns_200_with_ok_false() -> None:
     mock_db._conn.execute = AsyncMock()
 
     with (  # noqa: SIM117
-        patch("lyw_core.api.routes.health.ping_redis", return_value=_unhealthy("redis")),
-        patch("lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")),
-        patch("lyw_core.api.routes.health._ping_ollama", return_value=ServiceHealth(ok=True)),
+        patch(
+            "lyw_core.api.routes.health.ping_redis", return_value=_unhealthy("redis")
+        ),
+        patch(
+            "lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")
+        ),
+        patch(
+            "lyw_core.api.routes.health._ping_ollama",
+            return_value=ServiceHealth(ok=True),
+        ),
     ):
         with _make_client(mock_db) as c:
             response = c.get("/healthz")
@@ -81,8 +93,13 @@ def test_healthz_db_failure_still_returns_200() -> None:
 
     with (  # noqa: SIM117
         patch("lyw_core.api.routes.health.ping_redis", return_value=_healthy("redis")),
-        patch("lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")),
-        patch("lyw_core.api.routes.health._ping_ollama", return_value=ServiceHealth(ok=True)),
+        patch(
+            "lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")
+        ),
+        patch(
+            "lyw_core.api.routes.health._ping_ollama",
+            return_value=ServiceHealth(ok=True),
+        ),
     ):
         with _make_client(mock_db) as c:
             response = c.get("/healthz")

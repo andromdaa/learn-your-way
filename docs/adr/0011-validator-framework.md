@@ -3,6 +3,7 @@
 ## Status
 
 Accepted (2026-04-30)
+Amended (2026-05-01): validator semantics unchanged; job-boundary contract added (see below).
 
 ## Context
 
@@ -38,6 +39,25 @@ Define a minimal framework in `lyw_core/validators/base.py`:
 All validators are synchronous. Async generators call `run_validators`
 inline before yielding or persisting output.
 
+### Amendment (2026-05-01) — job-boundary contract
+
+`run_validators` continues to **raise** `ValidationError` at the internal
+generator boundary (e.g. inside `ReLeveler.relevel`). This is the correct
+semantics for an internal boundary: callers see the full failure set
+immediately, and no special return-type threading is required inside the
+generator.
+
+The **job boundary** — `personalize_concept` in
+`src/lyw_core/worker/jobs/personalize.py` — catches `ValidationError` (and
+other domain exceptions) and converts them to a typed `Failure` before
+returning. No exception crosses the Arq pickle boundary. See
+`docs/adr/0017-worker-result-contract.md` for the full contract.
+
+This model is "raise internally, convert at the boundary": validators raise
+`lyw_core.validators.base.ValidationError` (distinct from
+`pydantic.ValidationError`) at the generator layer; the job layer converts
+it to `Failure(code="validation_failed", ...)`.
+
 ## Consequences
 
 - Every validator in T4, T6, and T10 must implement
@@ -63,3 +83,9 @@ runs to discover all problems. Rejected in favour of collect-all semantics.
 
 **Async validators**: Not needed in phase 2; all generator payloads are
 in-memory objects. Can be added later without breaking existing validators.
+
+**`run_validators` returns a result instead of raising**: Considered in the
+typed-worker-result-protocol initiative. Rejected in favour of "raise
+internally, convert at the job boundary" — keeps generators simple and
+avoids threading a return type through every call site inside a generator.
+The conversion cost is paid once at the job layer.

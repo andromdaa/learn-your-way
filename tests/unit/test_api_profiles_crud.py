@@ -140,5 +140,3 @@ def test_delete_profile_not_found_returns_404() -> None:
     with _make_client(mock_db) as c:
         response = c.delete("/profiles/no-such-profile")
     assert response.status_code == 404
-
-
