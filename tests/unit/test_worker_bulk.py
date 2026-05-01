@@ -57,23 +57,6 @@ async def test_bulk_generate_enqueues_per_concept_kind() -> None:
     assert len(result["child_job_ids"]) == 2
 
 
-async def test_bulk_generate_lesson_scoped_kind_uses_sentinel() -> None:
-    from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID
-    from lyw_core.worker.jobs.bulk import bulk_generate
-
-    db = AsyncMock()
-    db.get_lesson_graph.return_value = _graph([_concept("c1")])
-    db.get_derived_asset.return_value = None
-    ctx = _make_ctx(db)
-
-    await bulk_generate(
-        ctx, lesson_id="lesson-1", profile_id="p1", kinds=["mind_map"], skip_existing=False
-    )
-
-    call_args = ctx["redis"].enqueue_job.call_args
-    assert call_args[1]["concept_id"] == LESSON_SCOPED_CONCEPT_ID
-
-
 async def test_bulk_generate_skip_existing_omits_already_done() -> None:
     from lyw_core.worker.jobs.bulk import bulk_generate
 

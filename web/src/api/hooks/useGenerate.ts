@@ -1,13 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../client";
 
-type GenerateKind =
-  | "relevel"
-  | "replace"
-  | "mnemonic"
-  | "mind_map"
-  | "timeline"
-  | "slides";
+type GenerateKind = "relevel" | "replace" | "mnemonic";
 
 export type GenerateRequest = {
   concept_id: string;

@@ -25,7 +25,7 @@ export const Route = createFileRoute("/lessons/$lessonId")({
   }),
 });
 
-const KINDS = ["relevel", "replace", "mnemonic", "mind_map", "timeline", "slides"] as const;
+const KINDS = ["relevel", "replace", "mnemonic"] as const;
 type Kind = (typeof KINDS)[number];
 
 function LessonWorkspace() {

@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from lyw_core.db.dao import LESSON_SCOPED_CONCEPT_ID, Database
+from lyw_core.db.dao import Database
 from lyw_core.worker.jobs._progress import make_progress
-
-_LESSON_SCOPED_KINDS = frozenset({"mind_map", "timeline"})
 
 
 async def bulk_generate(
@@ -29,11 +27,8 @@ async def bulk_generate(
 
     matrix: list[tuple[str, str]] = []
     for kind in kinds:
-        if kind in _LESSON_SCOPED_KINDS:
-            matrix.append((LESSON_SCOPED_CONCEPT_ID, kind))
-        else:
-            for concept in graph.concepts:
-                matrix.append((concept.id, kind))
+        for concept in graph.concepts:
+            matrix.append((concept.id, kind))
 
     child_ids: list[str] = []
     total = len(matrix)

@@ -147,7 +147,7 @@ def test_post_generate_invalid_kind_returns_422(client: TestClient) -> None:
 
 
 def test_post_generate_all_valid_kinds(client: TestClient) -> None:
-    for kind in ("relevel", "replace", "mnemonic", "mind_map", "timeline", "slides"):
+    for kind in ("relevel", "replace", "mnemonic"):
         response = client.post(
             "/lessons/lesson-1/generate",
             json={"concept_id": "c1", "profile_id": "p1", "kind": kind},
@@ -155,64 +155,14 @@ def test_post_generate_all_valid_kinds(client: TestClient) -> None:
         assert response.status_code == 202, f"kind={kind!r} should be accepted"
 
 
-def test_post_generate_slides_returns_202_and_job_id(client: TestClient) -> None:
-    """POST with kind='slides' returns 202 and a job_id immediately."""
-    response = client.post(
-        "/lessons/lesson-1/generate",
-        json={
-            "concept_id": "__lesson__",
-            "profile_id": "p1",
-            "kind": "slides",
-        },
-    )
-    assert response.status_code == 202
-    body = response.json()
-    assert "job_id" in body
-    assert body["job_id"] == "job-abc"
-    assert body["status"] == "queued"
-
-
-def test_post_generate_timeline_returns_202_and_job_id(client: TestClient) -> None:
-    """POST with kind='timeline' returns 202 and a job_id immediately.
-
-    Confirms the timeline kind is accepted by the API layer and enqueued
-    without waiting for generation (which may result in TimelineSkipped).
-    """
-    response = client.post(
-        "/lessons/lesson-1/generate",
-        json={
-            "concept_id": "__lesson__",
-            "profile_id": "p1",
-            "kind": "timeline",
-        },
-    )
-    assert response.status_code == 202
-    body = response.json()
-    assert "job_id" in body
-    assert body["job_id"] == "job-abc"
-    assert body["status"] == "queued"
-
-
-def test_post_generate_mind_map_returns_202_and_job_id(client: TestClient) -> None:
-    """POST with kind='mind_map' returns 202 and a job_id immediately.
-
-    Asserts the endpoint is non-blocking: it enqueues the job and responds
-    without waiting for generation to complete.  The mock arq queue returns
-    synchronously, confirming the route layer does not await any generator work.
-    """
-    response = client.post(
-        "/lessons/lesson-1/generate",
-        json={
-            "concept_id": "__lesson__",
-            "profile_id": "p1",
-            "kind": "mind_map",
-        },
-    )
-    assert response.status_code == 202
-    body = response.json()
-    assert "job_id" in body
-    assert body["job_id"] == "job-abc"
-    assert body["status"] == "queued"
+def test_post_generate_modality_kinds_rejected(client: TestClient) -> None:
+    """Modality kinds were removed per ADR-0016 and must be rejected by the schema."""
+    for kind in ("mind_map", "timeline", "slides"):
+        response = client.post(
+            "/lessons/lesson-1/generate",
+            json={"concept_id": "c1", "profile_id": "p1", "kind": kind},
+        )
+        assert response.status_code == 422, f"kind={kind!r} should be rejected"
 
 
 def test_post_generate_duplicate_job_returns_409() -> None:
