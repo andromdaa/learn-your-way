@@ -59,28 +59,11 @@ class ConceptNode(BaseModel):
     # Ordered by priority; index 0 = highest-priority prerequisite (ADR-0012)
     prerequisites: list[str] = Field(default_factory=list)
     provenance: Literal["heuristic", "llm_refined"] = "heuristic"  # ADR-0008
-    # Integer ordering rank for chronologically structured content; None = unordered (ADR-0014)
-    temporal_position: int | None = None
-
-
-class AssessmentItem(BaseModel):
-    id: str
-    kind: Literal["mcq", "matching", "short_answer", "drag_drop_timeline"]
-    prompt: str
-    rationale: str
-    source_spans: list[SourceSpan] = Field(min_length=1)
-    difficulty: Literal["easy", "medium", "hard"]
-    concept_id: str  # non-empty; references ConceptNode.id (ADR-0010)
-    correct_answer: str | None = None  # MCQ only; None for other kinds
-    bloom_level: (
-        Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
-        | None
-    ) = None  # set by MCQ generator; None treated as "remember" by active-learning validator
 
 
 class DerivedAsset(BaseModel):
     id: str
-    kind: Literal["immersive_text", "slides", "mind_map", "timeline", "image", "mnemonic"]
+    kind: Literal["immersive_text"]
     based_on_concepts: list[str] = Field(min_length=1)
     personalization_profile: PersonalizationProfile  # ADR-0009
     uri: str | None = None
@@ -108,26 +91,8 @@ These hold regardless of modality, generator, or pipeline phase:
 - Every `SourceSpan` resolves to valid character offsets in its
   referenced document, and `page_end >= page_start`,
   `char_end >= char_start`.
-- Every `AssessmentItem` carries a non-empty `concept_id` referencing a
-  `ConceptNode.id` in the same lesson graph (ADR-0010), and at least one
-  `SourceSpan`. The cited spans must be a subset of the parent concept's
-  span range.
-- `AssessmentItem.correct_answer` is MCQ-specific. Generators for
-  other item kinds (`short_answer`, `matching`) may leave it `None`.
-  The `POST /attempts` endpoint must handle `None` gracefully.
-- `AssessmentItem.bloom_level` is set by the MCQ generator prompt. A
-  `None` value is treated as `"remember"` (most conservative) by the
-  active learning validator so that untagged items do not silently pass
-  the section-quality gate.
 - `ConceptNode.prerequisites` is ordered by priority. The gap detector
   treats index 0 as the highest-priority prerequisite (ADR-0012).
-- `ConceptNode.temporal_position` is an optional integer ordering rank for
-  chronologically structured content. `None` means the concept has no temporal
-  position (unordered or not applicable). Negative values are valid (BC dates,
-  relative pre-epoch ordering). The timeline generator uses this field to
-  identify and sort chronological concepts; if all concepts in a graph have
-  `temporal_position = None` the timeline generator skips that graph.
-  See ADR-0014.
 - Every `DerivedAsset` references at least one concept in
   `based_on_concepts`.
 - `DerivedAsset.personalization_profile` is a typed `PersonalizationProfile`
