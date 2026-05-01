@@ -1,6 +1,8 @@
-# Systemic Cleanup — Initiative Index
+# Systemic Cleanup — Active Initiative
 
-Three structural changes address a recurring defect class surfaced by the 2026-05-01 pipeline audit. Every narrow fix shipped in the past held for the failure mode it addressed — but the *class* has not been engaged. This directory is the working surface for that engagement.
+One structural change remains to close a recurring defect class surfaced by the 2026-05-01 pipeline audit. Initiatives 1 and 2 (CI integration and typed worker-result protocol) have shipped as of 2026-05-01. Initiative 3 (chunker contract redefinition) remains open.
+
+See `archive/` for the completed planning documents from Initiatives 1 and 2.
 
 ## Why this exists
 
@@ -12,23 +14,21 @@ Three structural changes address a recurring defect class surfaced by the 2026-0
 | #75 → titles | Word-boundary truncation | Body-fallback fired at all because chunker still emits chrome |
 | #77 → guard | Raise `ReplaceSourceTooThinError` pre-flight | #82 — that very exception round-trips wrong through Arq pickle |
 
-Each fix was narrowly scoped, each explicitly said so, and each held. Three structural changes would close the class.
+Each fix was narrowly scoped, each explicitly said so, and each held. Three structural changes would close the class — two have shipped, one remains.
 
-## Initiatives
+## Active Initiative
 
-| Initiative | File | Effort |
-|---|---|---|
-| CI integration coverage | [ci-integration-coverage.md](ci-integration-coverage.md) | Small–medium (2 PRs, ~2 weeks) |
-| Typed worker-result protocol | [typed-worker-result-protocol.md](typed-worker-result-protocol.md) | Medium (2–4 PRs, ~2 weeks) |
-| Chunker contract redefinition | [chunker-contract-redefinition.md](chunker-contract-redefinition.md) | Large (4+ PRs, multi-week) |
+| Initiative | File | Effort | Status |
+|---|---|---|---|
+| Chunker contract redefinition | [chunker-contract-redefinition.md](chunker-contract-redefinition.md) | Large (4+ PRs, multi-week) | Open |
 
-## Recommended sequencing
+## Sequencing (completed)
 
-**Initiative 1 first.** CI integration coverage is a force multiplier — once landed, every change in Initiatives 2 and 3 is verified end-to-end before merge, eliminating the by-hand-on-a-real-chapter feedback loop that is the root cause of the recurrence cycle. Smallest and most reversible.
+**Initiative 1 (CI integration coverage)** shipped in AND-32 (2026-05-01). The integration job in `.github/workflows/ci.yml` now runs end-to-end tests on every PR, catching chunker false-positives and worker-boundary exceptions before merge.
 
-**Then Initiative 2**, because it unblocks Phase 3 generators from re-introducing the same pickle-bomb exception class. It touches the same files Phase 3 generators are landing in; earlier is better.
+**Initiative 2 (typed worker-result protocol)** shipped in AND-33 (2026-05-01). Generators now return `Success | Failure` typed envelopes rather than raising across the worker→Redis→API boundary, eliminating pickle-bomb deserialization failures.
 
-**Initiative 3 last.** Largest, most likely to compete with Phase 3 work, most deserving of the safety net the others provide.
+**Initiative 3 (chunker contract redefinition)** proceeds independently. The chunker redesign benefits from the CI infrastructure and typed-result foundation that Initiatives 1 and 2 provided.
 
 ## Whole-effort exclusions
 
@@ -41,31 +41,28 @@ Each fix was narrowly scoped, each explicitly said so, and each held. Three stru
 - **Threshold drift** — `src/lyw_core/chunker/heuristic.py:36` defines `_MIN_BODY_CHARS = 120`; `src/lyw_core/personalization/replace.py:41` defines `_MIN_BODY_CHARS = 200`. Same name, different values, no shared constant — the chunker accepts a 120-char section the replacer immediately rejects. Point-fix or absorbed into Initiative 3 (the threshold should disappear in the redesign). Initiative 3's smoke test should catch a regression if deferred.
 - **Empty-asset write** — `src/lyw_core/worker/jobs/personalize.py:181-183`: when `records` is empty, `"\n\n".join([])` produces `""` and the next line writes a 0-byte file. Fold into the #82 PR or file separately. Initiative 1's end-to-end smoke test should catch the regression (a 0-byte concept asset should fail the non-empty assertion).
 
-## Cross-cutting open question
+## Initiative 3 note
 
-**Phase 3 sequencing: interrupt it, run in parallel, or wait until Phase 3 closes?** Initiative 2 in particular touches the same files Phase 3 generators are being added to. Recommendation: run Initiative 1 in parallel with Phase 3 (CI wiring is additive, non-conflicting), then land Initiative 2 between Phase 3 task batches where branch divergence is smallest.
+Initiative 3 is independent of Phase 3 work. Per ADR-0016 (2026-05-01), Phase 3 modality generators are cancelled; the chunker redesign targets the core personalization flow (re-level and replace jobs) that remains in scope.
 
-## Update — 2026-05-01: ADR-0016 scope cut
+## Update — 2026-05-01: ADR-0016 scope cut and Initiative completion
 
 [ADR-0016](../../../adr/0016-phase-2-3-scope-reduction.md) drops Phase 3
 modality generators entirely and most of the Phase 2 assessment surface,
 keeping only re-leveling, interest-based example replacement, and the
-learner profile. Several recurrence sites tracked here — slides direct
-raises, modality validators, mind-map / timeline call sites, and the
-`MCQGenerator` batch-with-discards pattern — are being **deleted** in
-strip-in-place steps 2 and 3 rather than fixed structurally.
+learner profile.
 
-Effect on the initiatives:
+**Initiatives 1 and 2 have shipped** (AND-32 and AND-33, 2026-05-01):
 
-- **Initiative 1 (CI integration coverage)** — priority unchanged. Lands
-  on the trimmed surface in step 4 of the strip-in-place sequence; smaller
-  surface means fewer integration scenarios to wire up, but the rationale
-  (force-multiplier, pre-merge end-to-end verification) is unchanged.
-- **Initiative 2 (typed worker-result protocol / `JobOutcome[T]`)** —
-  scope shrinks. The protocol now only needs to cover the `relevel` and
-  `replace` job kinds; modality kinds are gone. Lands as step 5 of the
-  strip-in-place sequence. The cross-cutting Phase 3 sequencing question
-  above is resolved: there is no Phase 3 to coordinate with.
-- **Initiative 3 (chunker contract redefinition)** — priority unchanged.
-  The chunker still feeds relevel and replace, and the
-  `_MIN_BODY_CHARS` divergence point-fix flagged below remains relevant.
+- **Initiative 1 (CI integration coverage)** — Delivered as part of AND-32.
+  The `pytest -m integration` job in `.github/workflows/ci.yml` now verifies
+  end-to-end behavior on every PR, catching chunker false-positives and
+  worker-boundary exceptions before merge. See `archive/ci-integration-coverage.md`.
+- **Initiative 2 (typed worker-result protocol / `JobOutcome[T]`)** — Delivered
+  as part of AND-33. The protocol covers `relevel` and `replace` job kinds
+  (modality kinds were deleted with Phase 3). Generators return `Success | Failure`
+  envelopes; see `archive/typed-worker-result-protocol.md` and ADR-0017.
+
+**Initiative 3 (chunker contract redefinition)** — remains open and independent.
+The chunker still feeds relevel and replace, and the `_MIN_BODY_CHARS` divergence
+remains relevant.
