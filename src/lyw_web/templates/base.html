@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Learn Your Way — Test UI{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header>
+    <a href="/ui" class="site-title">Learn Your Way <span class="badge">test UI</span></a>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script type="module" src="/static/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({ startOnLoad: false, theme: 'default' });</script>
+</body>
+</html>
