@@ -27,8 +27,8 @@ See `docs/00-goals.md` for scope and `specs/` for the phase contract.
 
 ## Tech (pinned)
 
-- Base instructional model: Gemma 4 via Ollama (default) or any
-  OpenAI-compatible API
+- Base instructional model: Gemma 4 via Ollama (default: `gemma3:4b`,
+  configurable via `LYW_MODEL_NAME` env var) or any OpenAI-compatible API
 - Document parsing: Docling
 - Pipeline orchestration: Haystack
 - Vector store: Qdrant (Docker)
