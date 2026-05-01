@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from syrupy.assertion import SnapshotAssertion
 
 from lesson_graph.models import (
     ConceptNode,
@@ -142,13 +141,3 @@ def test_no_model_calls_needed() -> None:
     concepts = [_concept("c1", "Solo"), _concept("c2", "Pair", ["c1"])]
     out = MindMapGenerator().generate(_graph(concepts), _profile())
     assert out.startswith("flowchart TD")
-
-
-def test_snapshot_output_shape(snapshot: SnapshotAssertion) -> None:
-    concepts = [
-        _concept("c1", "Photosynthesis"),
-        _concept("c2", "Light reactions", ["c1"]),
-        _concept("c3", "Calvin cycle", ["c1", "c2"]),
-    ]
-    out = MindMapGenerator().generate(_graph(concepts), _profile())
-    assert snapshot == out

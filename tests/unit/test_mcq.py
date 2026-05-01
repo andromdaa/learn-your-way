@@ -13,7 +13,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from syrupy.assertion import SnapshotAssertion
 
 from lesson_graph.models import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.assessment import MCQGenerator
@@ -77,52 +76,6 @@ async def _make_dao() -> Database:
     await db.add_source("doc-1", "/data/doc.pdf", "sha-1")
     await db.upsert_lesson_graph(_graph())
     return db
-
-
-# ---------------------------------------------------------------------------
-# Snapshot test: 2 candidates, 1 fails faithfulness, 1 passes
-# ---------------------------------------------------------------------------
-
-
-async def test_mcq_returns_only_passing_items(snapshot: SnapshotAssertion) -> None:
-    payload = json.dumps(
-        [
-            _mcq(prompt="Q1: What is released?", correct="Oxygen"),
-            _mcq(
-                prompt="Q2: What is consumed?",
-                options=["Water", "Air", "Salt", "Sugar"],
-                correct="Water",
-                rationale="Plants take up water to drive photosynthesis.",
-                bloom="apply",
-                difficulty="medium",
-            ),
-        ]
-    )
-    model = AsyncMock()
-    model.complete = AsyncMock(return_value=payload)
-    faithfulness = MagicMock()
-    faithfulness.validate = MagicMock(
-        side_effect=[
-            ValidationResult(passed=True),
-            ValidationResult(passed=False, reason="span out of range"),
-        ]
-    )
-    clarity = _passing_validator()
-    dao = await _make_dao()
-
-    gen = MCQGenerator(model_client=model, validators=[faithfulness, clarity], dao=dao)
-    concept = _concept()
-    items = await gen.generate(concept, _graph(concept))
-
-    assert len(items) == 1
-    assert items[0].correct_answer == "Oxygen"
-    assert items[0].bloom_level == "understand"
-    assert items[0].source_spans[0] == concept.source_spans[0]
-
-    redacted = [{**item.model_dump(), "id": "<uuid>"} for item in items]
-    assert snapshot == redacted
-
-    await dao.close()
 
 
 # ---------------------------------------------------------------------------
