@@ -92,13 +92,14 @@ uvx --with pydantic mypy src/      # mypy needs the pydantic plugin
 - Schema changes require `SCHEMA_CHANGE=1`, an updated test in
   `tests/unit/test_lesson_graph.py`, and an ADR if the change is
   semantically significant.
-- Phase 3 generators must persist output via the two-store pattern in
-  ADR-0013: file content is written to content-addressed storage via
-  `DataDir.write_asset(data, suffix=...)` (SHA-256 over bytes); metadata
-  is keyed in the `derived_assets` SQLite table by
-  `(lesson_id, concept_id, kind, profile_id)`. The `personalize_concept`
-  Arq job orchestrates both writes; generators must not call
-  `save_derived_asset` directly.
+- Generators that produce a `DerivedAsset` (currently `relevel` and
+  `replace`; modality kinds are deleted per ADR-0016) must persist output
+  via the two-store pattern in ADR-0013: file content is written to
+  content-addressed storage via `DataDir.write_asset(data, suffix=...)`
+  (SHA-256 over bytes); metadata is keyed in the `derived_assets` SQLite
+  table by `(lesson_id, concept_id, kind, profile_id)`. The
+  `personalize_concept` Arq job orchestrates both writes; generators must
+  not call `save_derived_asset` directly.
 - There are two `DerivedAsset` types: `lesson_graph.models.DerivedAsset`
   (Pydantic, generator-output domain model with `based_on_concepts` and rich
   `personalization_profile`) and `lyw_core.db.dao.DerivedAsset` (plain
@@ -109,14 +110,13 @@ uvx --with pydantic mypy src/      # mypy needs the pydantic plugin
   `LESSON_SCOPED_CONCEPT_ID` (`"__lesson__"`) from `src/lyw_core/db/dao.py`
   as the `concept_id` value — the `derived_assets` table requires a non-null
   `concept_id`.
-- Phase 3 generators that produce batches should discard failing items
-  (as `MCQGenerator` does); generators that produce a single result
-  should raise on failure (as `MnemonicGenerator` does). See ADR-0011.
+- Generators that produce a single result raise `ValidationError` on
+  validator failure rather than patching the asset (ADR-0011). The
+  batch-with-discards pattern (`MCQGenerator`) is being deleted with the
+  rest of the assessment surface per ADR-0016; do not introduce new
+  batch-with-discards generators.
 - `PersonalizationProfile` is a Pydantic `BaseModel`; use the Pydantic
   constructor, not dict literals (ADR-0009).
-- `AssessmentItem.concept_id` must be populated at generation time; it
-  is not backfill-able via span join (ADR-0010).
-- Serialise `GlowsGrows` with `dataclasses.asdict()`, not `.model_dump()`.
 
 ## Packages
 
@@ -128,12 +128,23 @@ New feature areas that are purely presentation (browser UI) go in `web/`. New fe
 
 ## Phases
 
-1. Ingest and ground (`specs/phase-1-ingest.md`) — complete
-2. Personalization and assessment (`specs/phase-2-personalization.md`) — complete
-3. Modality generators (`specs/phase-3-modalities.md`) — **in flight**
+1. Ingest and ground (`specs/phase-1-ingest.md`) — complete.
+2. Personalization (`specs/phase-2-personalization.md`) — **scope cut per
+   ADR-0016 (2026-05-01)**. Deliverables retained: re-leveling,
+   interest-based example replacement, learner profile / `POST /profiles`,
+   `PersonalizationProfile` + `ReplacementRecord`. Everything else (section
+   quizzes, embedded MCQs, attempts, glows/grows, mnemonics, gap detector,
+   `POST /attempts`, `POST /recommendations/next`) is dropped. The
+   `personalize_concept` Arq job retains only `relevel` and `replace` kinds.
+3. Modality generators (`specs/phase-3-modalities.md`) — **cancelled per
+   ADR-0016 (2026-05-01)**. `mind_map`, `timeline`, and `slides` generators
+   are being deleted via the strip-in-place sequence whose contract is
+   ADR-0016.
 
-Plans for the in-flight phase live under `docs/plans/`. Specs are
-stable contracts; plans are mutable trackers.
+Plans for in-flight work live under `docs/plans/`. Specs are stable
+contracts; plans are mutable trackers. `specs/phase-2-personalization.md`
+and `specs/phase-3-modalities.md` are kept as historical references with a
+superseded-by-ADR-0016 banner.
 
 ## Reference material
 

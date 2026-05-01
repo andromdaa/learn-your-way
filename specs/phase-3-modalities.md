@@ -1,5 +1,12 @@
 # Phase 3 — Modality generators
 
+> **Status: superseded entirely by
+> [ADR-0016](../docs/adr/0016-phase-2-3-scope-reduction.md) (2026-05-01).**
+> Phase 3 is cancelled. Mind-map, timeline, and slide generators are being
+> deleted via the strip-in-place sequence whose contract is ADR-0016. This
+> file is retained as a historical reference; nothing in the deliverables
+> list below is in scope.
+
 ## Goal
 
 Add modality generators on top of the personalized lesson graph. Each
@@ -29,24 +36,26 @@ the structural visual cases that phase 3 needs.
 
 ## Deliverables
 
-- [ ] Mind-map generator producing Mermaid diagrams from the concept
-      graph. Persists output as `DerivedAsset` with `kind="mind_map"`.
-- [ ] Timeline generator for chronological content. The lesson graph
+**All deliverables below are dropped per ADR-0016.**
+
+- [ ] ~~Mind-map generator producing Mermaid diagrams from the concept
+      graph. Persists output as `DerivedAsset` with `kind="mind_map"`.~~ **DROPPED.**
+- [ ] ~~Timeline generator for chronological content. The lesson graph
       must record temporal ordering for this to be meaningful. Persists
-      output as `DerivedAsset` with `kind="timeline"`.
-- [ ] Slide generator producing structured slide decks with speaker
+      output as `DerivedAsset` with `kind="timeline"`.~~ **DROPPED.**
+- [ ] ~~Slide generator producing structured slide decks with speaker
       notes. Source spans on every slide. Persists output as
-      `DerivedAsset` with `kind="slides"`.
-- [ ] Modality-specific validators that gate persistence, implemented
+      `DerivedAsset` with `kind="slides"`.~~ **DROPPED.**
+- [ ] ~~Modality-specific validators that gate persistence, implemented
       as `Validator[T]` Protocols (ADR-0011). Single-output generators
       (mind map, timeline) raise `ValidationError` on failure;
-      slide generators may discard individual failing slides.
-- [ ] Wire the three new modality generators into the
+      slide generators may discard individual failing slides.~~ **DROPPED.**
+- [ ] ~~Wire the three new modality generators into the
       `personalize_concept` Arq job. `POST /lessons/{id}/generate` and
       `GET /lessons/{id}/generate/{job_id}` are already implemented
       (PR #47); phase 3 extends the job to dispatch `mind_map`,
-      `timeline`, and `slides` generator kinds.
-- [ ] Asset retrieval by ID via the existing `get_derived_asset` DAO.
+      `timeline`, and `slides` generator kinds.~~ **DROPPED.**
+- [ ] ~~Asset retrieval by ID via the existing `get_derived_asset` DAO.~~ **DROPPED.**
 
 ## Out of scope
 
