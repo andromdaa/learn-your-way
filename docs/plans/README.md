@@ -13,6 +13,7 @@ and close out by reconciling any spec drift.
 
 - One plan per active phase.
 - Filename pattern: `phase-N-<short-name>-tracker.md`.
+- Audit follow-ups live under `audits/<short-name>/` with a README index plus one file per initiative.
 - Decisions made during implementation that affect the phase contract
   go back into the relevant `specs/` file via PR; the plan records
   the fact and the date.
