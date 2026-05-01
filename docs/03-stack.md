@@ -17,8 +17,6 @@ All choices are pinned. Rationale for the non-obvious calls lives in
 | Job queue | Arq (Redis-backed) | [0003](./adr/0003-arq-over-celery.md) |
 | Database | SQLite | [0002](./adr/0002-sqlite-over-postgres.md) |
 | File storage | Local filesystem | [0004](./adr/0004-local-fs-over-s3.md) |
-| Mind map generation | Mermaid | — |
-| Concept graph (interactive) | Cytoscape.js | — |
 
 ## Application-level concerns
 
@@ -70,7 +68,7 @@ the application layer.
 | Python | 3.12+ |
 | Linter / formatter | `ruff` |
 | Type checker | `mypy` in strict mode, with the `pydantic.mypy` plugin |
-| Test runner | `pytest` with `pytest-cov`, 90% coverage gate |
+| Test runner | `pytest` with `pytest-cov`, 93% coverage gate |
 | CI | `.github/workflows/ci.yml` runs all of the above |
 
 Quick commands:
