@@ -8,18 +8,11 @@ flowchart LR
     U[Learner profile<br/>grade + interests + goals] --> C[Personalization layer]
     B --> C
     C --> D[Immersive text]
-    C --> E[Slides]
-    C --> F[Mind map / timeline]
-    C --> G[Quiz generator]
-    G --> H[Learner signals]
-    H --> I[Gap detector / next-step selector]
-    I --> D
-    I --> E
-    I --> F
 ```
 
-Stage 1 is personalization. Stage 2 is modality generation. Assessment
-signals feed back into next-step selection.
+Stage 1 is personalization. Stage 2 is content generation. The personalized
+lesson graph is transformed into immersive text tailored to the learner's
+grade level and interests.
 
 ## Layers
 
@@ -69,25 +62,14 @@ Implementation: hybrid retrieval — BM25 (Haystack
 cross-encoder reranker. The retriever serves both interactive queries
 and the generation pipelines.
 
-### 5. Modality generators
+### 5. Content generation
 
-One generator per modality. Each one consumes the personalized lesson
-graph and produces a `DerivedAsset` that records the concepts and
-source spans it was based on.
+The immersive text generator consumes the personalized lesson graph and
+produces an `ImmersiveText` asset that records the concepts and source
+spans it was based on. The generator has a validator that runs before the
+asset is persisted. A generated asset that fails validation is rejected,
+not patched.
 
-Modalities in scope for phase 3: immersive text, slides, mind map,
-timeline. See `specs/phase-3-modalities.md`.
-
-Each generator has a modality-specific validator that runs before the
-asset is persisted. A generated asset that fails validation is
-rejected, not patched.
-
-### 6. Assessment loop
-
-The quiz generator produces `AssessmentItem` instances tied to
-learning objectives and source spans. Learner attempts produce signals
-consumed by the gap detector, which selects next-step concepts to
-revisit.
 
 ## Orchestration
 
