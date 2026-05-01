@@ -141,6 +141,66 @@ def test_chunk_output_produces_multinode_mindmap() -> None:
     assert out.count('["') == 2
 
 
+def _body_only_doc(text: str) -> ParsedDocument:
+    """Build a single-block ParsedDocument with no heading, exercising
+    HeuristicChunker._make_node's body-fallback title branch.
+    """
+    return ParsedDocument(
+        source_path="t.pdf",
+        text=text,
+        blocks=[
+            ParsedBlock(
+                block_id="b1",
+                page_number=1,
+                block_type="text",
+                text=text,
+                char_start=0,
+                char_end=len(text),
+            )
+        ],
+        page_count=1,
+    )
+
+
+def test_body_fallback_title_short_returned_verbatim() -> None:
+    """Body texts within the fallback limit are kept exactly, no ellipsis."""
+    text = "Short body."
+    chunker = HeuristicChunker(doc_id="short-doc")
+    nodes = chunker.chunk(_body_only_doc(text))
+    assert len(nodes) == 1
+    assert nodes[0].title == text
+    assert "…" not in nodes[0].title
+
+
+def test_body_fallback_title_truncates_at_word_boundary() -> None:
+    """Long bodies truncate at the last whitespace within 50 chars + ellipsis."""
+    text = (
+        "Each point in the plane is identified by its x-coordinate "
+        "and its y-coordinate, in that order."
+    )
+    chunker = HeuristicChunker(doc_id="long-doc")
+    nodes = chunker.chunk(_body_only_doc(text))
+    assert len(nodes) == 1
+    title = nodes[0].title
+    assert title.endswith("…")
+    # Word-boundary cut: the partial token "x-coo" must not appear.
+    assert "x-coo" not in title
+    # The non-ellipsis prefix must be a verbatim prefix of the source text.
+    prefix = title[:-1].rstrip()
+    assert text.startswith(prefix)
+    # Length budget: at most _MAX_TITLE_FALLBACK chars of source plus the ellipsis.
+    assert len(title) <= 51
+
+
+def test_body_fallback_title_no_whitespace_falls_back_to_hard_slice() -> None:
+    """Bodies without whitespace in range fall back to a hard slice + ellipsis."""
+    text = "x" * 60
+    chunker = HeuristicChunker(doc_id="nowhitespace-doc")
+    nodes = chunker.chunk(_body_only_doc(text))
+    assert len(nodes) == 1
+    assert nodes[0].title == "x" * 50 + "…"
+
+
 def test_long_body_splits_at_block_boundary() -> None:
     """Multiple body blocks exceeding max_chars are split into separate nodes."""
     body1 = "x" * 40

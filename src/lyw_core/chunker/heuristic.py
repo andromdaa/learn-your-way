@@ -12,6 +12,23 @@ def _make_id(doc_id: str, char_start: int, char_end: int) -> str:
     return hashlib.sha1(key.encode()).hexdigest()[:12]
 
 
+def _truncate_title(text: str) -> str:
+    """Truncate body-fallback title at the last word boundary within the
+    first ``_MAX_TITLE_FALLBACK`` characters, appending an ellipsis.
+
+    Returns ``text`` verbatim when it already fits within the limit.  When
+    the prefix contains no whitespace at all (e.g. a long URL) we fall
+    back to a hard slice plus ellipsis so the truncation is at least
+    visually explicit.
+    """
+    if len(text) <= _MAX_TITLE_FALLBACK:
+        return text
+    for i in range(_MAX_TITLE_FALLBACK - 1, 0, -1):
+        if text[i].isspace():
+            return text[:i].rstrip() + "…"
+    return text[:_MAX_TITLE_FALLBACK].rstrip() + "…"
+
+
 class HeuristicChunker:
     """Deterministic first-pass chunker: splits a ParsedDocument into
     ConceptNodes at heading boundaries with a max-chars fallback.
@@ -112,7 +129,7 @@ class HeuristicChunker:
         if heading:
             title = heading.text
         elif body_blocks:
-            title = body_blocks[0].text[:_MAX_TITLE_FALLBACK]
+            title = _truncate_title(body_blocks[0].text)
         else:
             title = "Untitled"
 
