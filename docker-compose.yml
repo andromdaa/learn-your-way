@@ -44,7 +44,7 @@ services:
   open-webui:
     image: ghcr.io/open-webui/open-webui:v0.9.2
     ports:
-      - "3000:8080"
+      - "3030:8080"
     volumes:
       - open_webui_data:/app/backend/data
     environment:
