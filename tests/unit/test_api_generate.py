@@ -378,6 +378,86 @@ def test_get_generate_result_complete_no_result_info() -> None:
     assert body["result"] is None
 
 
+def test_get_generate_result_failed_with_validation_error() -> None:
+    """When the job raised a ValidationError, endpoint returns status=failed with error repr."""
+    import unittest.mock as _mock
+
+    from pydantic import BaseModel as _PydanticBase
+    from pydantic import ValidationError
+
+    # Construct a real ValidationError via a Pydantic model
+    class _M(_PydanticBase):
+        x: int
+
+    try:
+        _M(x="not-an-int")
+    except ValidationError as exc:
+        raised_exc = exc
+
+    mock_db = AsyncMock()
+    mock_arq = AsyncMock()
+
+    mock_result_info = MagicMock()
+    mock_result_info.success = False
+    mock_result_info.result = raised_exc
+
+    mock_job = AsyncMock()
+    mock_job.status = AsyncMock(return_value=JobStatus.complete)
+    mock_job.result_info = AsyncMock(return_value=mock_result_info)
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_arq_redis] = lambda: mock_arq
+
+    with (
+        _mock.patch("lyw_core.api.routes.generate.Job", return_value=mock_job),
+        TestClient(_app) as c,
+    ):
+        response = c.get("/lessons/lesson-1/generate/job-failed")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "failed"
+    assert body["job_id"] == "job-failed"
+    assert "error" in body["result"]
+    assert "validation error" in body["result"]["error"].lower()
+
+
+def test_get_generate_result_failed_with_arbitrary_exception() -> None:
+    """When the job raised an arbitrary exception, endpoint returns status=failed."""
+    import unittest.mock as _mock
+
+    mock_db = AsyncMock()
+    mock_arq = AsyncMock()
+
+    raised_exc = RuntimeError("something went wrong in the worker")
+
+    mock_result_info = MagicMock()
+    mock_result_info.success = False
+    mock_result_info.result = raised_exc
+
+    mock_job = AsyncMock()
+    mock_job.status = AsyncMock(return_value=JobStatus.complete)
+    mock_job.result_info = AsyncMock(return_value=mock_result_info)
+
+    _app = create_app(lifespan=_null_lifespan)
+    _app.dependency_overrides[get_db] = lambda: mock_db
+    _app.dependency_overrides[get_arq_redis] = lambda: mock_arq
+
+    with (
+        _mock.patch("lyw_core.api.routes.generate.Job", return_value=mock_job),
+        TestClient(_app) as c,
+    ):
+        response = c.get("/lessons/lesson-1/generate/job-failed-runtime")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "failed"
+    assert body["job_id"] == "job-failed-runtime"
+    assert "error" in body["result"]
+    assert "something went wrong in the worker" in body["result"]["error"]
+
+
 # ---------------------------------------------------------------------------
 # OpenAPI schema
 # ---------------------------------------------------------------------------
