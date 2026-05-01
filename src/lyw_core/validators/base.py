@@ -29,6 +29,11 @@ class ValidationError(Exception):
         self.reasons = reasons
         super().__init__("; ".join(reasons))
 
+    def __reduce__(self) -> tuple[type, tuple[list[str]]]:
+        # Default BaseException pickle reconstructs via self.args (the joined
+        # string), losing the list structure and making round-trip fail.
+        return (self.__class__, (self.reasons,))
+
 
 _T_contra = TypeVar("_T_contra", contravariant=True)
 
