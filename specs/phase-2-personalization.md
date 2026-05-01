@@ -1,5 +1,17 @@
 # Phase 2 — Personalization and assessment
 
+> **Status: superseded by [ADR-0016](../docs/adr/0016-phase-2-3-scope-reduction.md)
+> (2026-05-01).** The deliverables marked dropped below are no longer in
+> scope; the kept ones are the project's current focus. This file is
+> retained as a historical reference.
+>
+> **Kept:** learner profile + `POST /profiles`, re-leveling, interest-based
+> example replacement, `PersonalizationProfile`, `ReplacementRecord`.
+>
+> **Dropped:** embedded MCQs, section quizzes, glows/grows, mnemonics,
+> quiz signal capture, gap detector, `POST /attempts`,
+> `POST /recommendations/next`, `AssessmentItem.concept_id` schema change.
+
 ## Goal
 
 Implement text personalization and assessment on top of the canonical
@@ -43,20 +55,21 @@ here:
       "personalizable" examples (analogies, sample problems) with
       examples tied to the learner's stated interests. Never invent
       content not anchored to a `SourceSpan`.
-- [ ] Embedded multiple-choice questions tied to learning objectives,
-      with rationale and source citation.
-- [ ] Section-level quizzes (5–10 items per section) with "Glows" and
-      "Grows" feedback.
-- [ ] Mnemonic memory aids for high-priority concepts.
-- [ ] Quiz signal capture and the gap detector that selects next-step
-      concepts to revisit.
-- [ ] `POST /attempts` and `POST /recommendations/next` endpoints
-      from `docs/04-api.md`.
-- [ ] **Schema change (SCHEMA_CHANGE=1 required)**: Add
+- [ ] ~~Embedded multiple-choice questions tied to learning objectives,
+      with rationale and source citation.~~ **DROPPED — ADR-0016.**
+- [ ] ~~Section-level quizzes (5–10 items per section) with "Glows" and
+      "Grows" feedback.~~ **DROPPED — ADR-0016.**
+- [ ] ~~Mnemonic memory aids for high-priority concepts.~~ **DROPPED — ADR-0016.**
+- [ ] ~~Quiz signal capture and the gap detector that selects next-step
+      concepts to revisit.~~ **DROPPED — ADR-0016.**
+- [ ] ~~`POST /attempts` and `POST /recommendations/next` endpoints
+      from `docs/04-api.md`.~~ **DROPPED — ADR-0016.**
+- [ ] ~~**Schema change (SCHEMA_CHANGE=1 required)**: Add
       `concept_id: str` to `AssessmentItem` so the gap detector can
       map a failed quiz item directly to its parent concept. Requires
       updated tests in `tests/test_lesson_graph.py` and an ADR if
-      semantically significant.
+      semantically significant.~~ **DROPPED — ADR-0016 (`AssessmentItem`
+      is being removed).**
 - [ ] **Schema change (SCHEMA_CHANGE=1 required)**: Replace
       `DerivedAsset.personalization_profile: dict[str, Any]` with a
       typed `PersonalizationProfile` model. This model must include a

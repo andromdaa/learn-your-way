@@ -44,3 +44,28 @@ Each fix was narrowly scoped, each explicitly said so, and each held. Three stru
 ## Cross-cutting open question
 
 **Phase 3 sequencing: interrupt it, run in parallel, or wait until Phase 3 closes?** Initiative 2 in particular touches the same files Phase 3 generators are being added to. Recommendation: run Initiative 1 in parallel with Phase 3 (CI wiring is additive, non-conflicting), then land Initiative 2 between Phase 3 task batches where branch divergence is smallest.
+
+## Update — 2026-05-01: ADR-0016 scope cut
+
+[ADR-0016](../../../adr/0016-phase-2-3-scope-reduction.md) drops Phase 3
+modality generators entirely and most of the Phase 2 assessment surface,
+keeping only re-leveling, interest-based example replacement, and the
+learner profile. Several recurrence sites tracked here — slides direct
+raises, modality validators, mind-map / timeline call sites, and the
+`MCQGenerator` batch-with-discards pattern — are being **deleted** in
+strip-in-place steps 2 and 3 rather than fixed structurally.
+
+Effect on the initiatives:
+
+- **Initiative 1 (CI integration coverage)** — priority unchanged. Lands
+  on the trimmed surface in step 4 of the strip-in-place sequence; smaller
+  surface means fewer integration scenarios to wire up, but the rationale
+  (force-multiplier, pre-merge end-to-end verification) is unchanged.
+- **Initiative 2 (typed worker-result protocol / `JobOutcome[T]`)** —
+  scope shrinks. The protocol now only needs to cover the `relevel` and
+  `replace` job kinds; modality kinds are gone. Lands as step 5 of the
+  strip-in-place sequence. The cross-cutting Phase 3 sequencing question
+  above is resolved: there is no Phase 3 to coordinate with.
+- **Initiative 3 (chunker contract redefinition)** — priority unchanged.
+  The chunker still feeds relevel and replace, and the
+  `_MIN_BODY_CHARS` divergence point-fix flagged below remains relevant.
