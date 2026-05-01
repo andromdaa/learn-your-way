@@ -9,9 +9,13 @@ from dataclasses import dataclass
 from typing import Any
 
 import aiosqlite
+import structlog
+from pydantic import ValidationError
 
 from lesson_graph import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.profiles.models import LearnerProfile
+
+log = structlog.get_logger()
 
 
 @dataclass
@@ -186,16 +190,24 @@ class Database:
                 )
                 for sr in span_rows
             ]
-            concepts.append(
-                ConceptNode(
-                    id=crow["id"],
-                    title=crow["title"],
-                    summary=crow["summary"],
-                    learning_objective=crow["learning_objective"],
-                    source_spans=spans,
-                    prerequisites=json.loads(crow["prerequisites"]),
+            try:
+                concepts.append(
+                    ConceptNode(
+                        id=crow["id"],
+                        title=crow["title"],
+                        summary=crow["summary"],
+                        learning_objective=crow["learning_objective"],
+                        source_spans=spans,
+                        prerequisites=json.loads(crow["prerequisites"]),
+                    )
                 )
-            )
+            except ValidationError:
+                log.warning(
+                    "dao.concept_skipped_invalid",
+                    concept_id=crow["id"],
+                    lesson_id=lesson_id,
+                    span_count=len(spans),
+                )
 
         return LessonGraph(
             id=lesson_row["id"],
