@@ -17,12 +17,15 @@ from lyw_core.retrieval.bm25 import BM25Retriever
 from lyw_core.retrieval.embedding import EmbeddingModel
 from lyw_core.retrieval.qdrant import QdrantIndexer
 from lyw_core.settings import Settings
+from lyw_core.storage.fs import DataDir
 
 log = structlog.get_logger()
 
 
 async def startup(ctx: dict[str, Any]) -> None:
     cfg = Settings()
+    data_dir = DataDir(cfg.data_dir)
+    data_dir.bootstrap()
     ctx["db"] = await Database.connect(str(cfg.db_path))
     ctx["qdrant_client"] = QdrantClient(url=cfg.qdrant_url)
     ctx["embedding"] = EmbeddingModel()
@@ -30,8 +33,9 @@ async def startup(ctx: dict[str, Any]) -> None:
 
 
 async def shutdown(ctx: dict[str, Any]) -> None:
-    db: Database = ctx["db"]
-    await db.close()
+    if "db" in ctx:
+        db: Database = ctx["db"]
+        await db.close()
 
 
 async def ingest_source(
