@@ -4,11 +4,12 @@ Validates that the full pipeline from PDF to personalized asset works,
 and that exceptions raised inside personalize_concept propagate cleanly
 rather than crashing the worker (the "not 500" contract).
 
-Requires Docker (Testcontainers boots Qdrant and Redis as needed).
+Requires Docker (Testcontainers boots Qdrant).
 """
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 
@@ -23,8 +24,6 @@ from lyw_core.retrieval.embedding import EmbeddingModel
 from lyw_core.storage.fs import DataDir
 
 _CI_SMOKE_PDF = Path(__file__).parent.parent / "fixtures" / "ci_smoke.pdf"
-_DOC_ID = "ci_smoke"
-_LESSON_ID = f"lesson_{_DOC_ID}"
 _PROFILE_ID = "smoke_profile"
 
 _CONCEPT_COUNT_LOW = 5
@@ -66,8 +65,13 @@ def embedding() -> EmbeddingModel:
 
 
 @pytest.fixture
-async def db(tmp_path: Path) -> Database:
-    return await Database.connect(str(tmp_path / "smoke.db"))
+async def db(tmp_path: Path) -> AsyncGenerator[Database, None]:
+    # Use yield so aiosqlite's worker thread is stopped cleanly after each
+    # test. Without close(), the daemon thread blocks on queue.Queue.get()
+    # during Python 3.12's threading._shutdown(), preventing process exit.
+    database = await Database.connect(str(tmp_path / "smoke.db"))
+    yield database
+    await database.close()
 
 
 @pytest.fixture
@@ -78,6 +82,7 @@ def data_dir(tmp_path: Path) -> DataDir:
 
 
 @pytest.mark.integration
+@pytest.mark.timeout(300)
 async def test_smoke_concept_count_in_range(
     db: Database,
     qdrant_client: QdrantClient,
@@ -96,7 +101,11 @@ async def test_smoke_concept_count_in_range(
         "qdrant_client": qdrant_client,
         "embedding": embedding,
     }
-    result = await ingest_source(ctx, source_path=str(_CI_SMOKE_PDF), doc_id=_DOC_ID)
+    # Use a unique doc_id so the Qdrant collection name doesn't collide with
+    # the other smoke tests, which share the same module-scoped qdrant_client.
+    result = await ingest_source(
+        ctx, source_path=str(_CI_SMOKE_PDF), doc_id="ci_smoke_count"
+    )
     count = result["concept_count"]
     assert _CONCEPT_COUNT_LOW <= count <= _CONCEPT_COUNT_HIGH, (
         f"Expected {_CONCEPT_COUNT_LOW}-{_CONCEPT_COUNT_HIGH} concepts, "
@@ -105,6 +114,7 @@ async def test_smoke_concept_count_in_range(
 
 
 @pytest.mark.integration
+@pytest.mark.timeout(300)
 async def test_smoke_personalize_relevel_succeeds(
     db: Database,
     qdrant_client: QdrantClient,
@@ -115,15 +125,18 @@ async def test_smoke_personalize_relevel_succeeds(
     from lyw_core.worker.jobs.ingest import ingest_source
     from lyw_core.worker.jobs.personalize import personalize_concept
 
+    doc_id = "ci_smoke_relevel"
+    lesson_id = f"lesson_{doc_id}"
+
     ingest_ctx: dict[str, Any] = {
         "db": db,
         "bm25_retriever": BM25Retriever(),
         "qdrant_client": qdrant_client,
         "embedding": embedding,
     }
-    await ingest_source(ingest_ctx, source_path=str(_CI_SMOKE_PDF), doc_id=_DOC_ID)
+    await ingest_source(ingest_ctx, source_path=str(_CI_SMOKE_PDF), doc_id=doc_id)
 
-    graph = await db.get_lesson_graph(_LESSON_ID)
+    graph = await db.get_lesson_graph(lesson_id)
     assert graph is not None and graph.concepts
     concept_id = graph.concepts[0].id
 
@@ -142,7 +155,7 @@ async def test_smoke_personalize_relevel_succeeds(
     }
     result = await personalize_concept(
         personalize_ctx,
-        lesson_id=_LESSON_ID,
+        lesson_id=lesson_id,
         concept_id=concept_id,
         profile_id=_PROFILE_ID,
         kind="relevel",
@@ -152,6 +165,7 @@ async def test_smoke_personalize_relevel_succeeds(
 
 
 @pytest.mark.integration
+@pytest.mark.timeout(300)
 async def test_smoke_personalize_exception_propagates(
     db: Database,
     qdrant_client: QdrantClient,
@@ -169,15 +183,18 @@ async def test_smoke_personalize_exception_propagates(
     from lyw_core.worker.jobs.ingest import ingest_source
     from lyw_core.worker.jobs.personalize import personalize_concept
 
+    doc_id = "ci_smoke_error"
+    lesson_id = f"lesson_{doc_id}"
+
     ingest_ctx: dict[str, Any] = {
         "db": db,
         "bm25_retriever": BM25Retriever(),
         "qdrant_client": qdrant_client,
         "embedding": embedding,
     }
-    await ingest_source(ingest_ctx, source_path=str(_CI_SMOKE_PDF), doc_id=_DOC_ID)
+    await ingest_source(ingest_ctx, source_path=str(_CI_SMOKE_PDF), doc_id=doc_id)
 
-    graph = await db.get_lesson_graph(_LESSON_ID)
+    graph = await db.get_lesson_graph(lesson_id)
     assert graph is not None and graph.concepts
     concept_id = graph.concepts[0].id
 
@@ -197,7 +214,7 @@ async def test_smoke_personalize_exception_propagates(
     with pytest.raises(OllamaError) as exc_info:
         await personalize_concept(
             personalize_ctx,
-            lesson_id=_LESSON_ID,
+            lesson_id=lesson_id,
             concept_id=concept_id,
             profile_id=_PROFILE_ID,
             kind="relevel",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
 
@@ -21,9 +22,10 @@ def embedding() -> EmbeddingModel:
 
 
 @pytest.fixture
-async def db(tmp_path: Path) -> Database:
+async def db(tmp_path: Path) -> AsyncGenerator[Database, None]:
     database = await Database.connect(str(tmp_path / "test.db"))
-    return database
+    yield database
+    await database.close()
 
 
 @pytest.fixture
