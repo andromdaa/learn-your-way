@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "0 3 * * *" # nightly at 03:00 UTC
 
 permissions:
   contents: read
@@ -50,3 +52,27 @@ jobs:
       - name: Security audit (pip-audit)
         continue-on-error: true
         run: uv run --with pip-audit pip-audit
+
+  integration:
+    # Non-blocking gate while flake risk on GitHub-hosted runners is assessed.
+    # Promote to blocking (remove continue-on-error) after one clean sprint
+    # with no spurious failures. See docs/plans/audits/systemic-cleanup/ci-integration-coverage.md.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@caf0cab7a618c569241d31dcd442f54681755d39 # v3.2.4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync dependencies
+        run: uv sync --extra dev --frozen
+
+      - name: Integration tests (Testcontainers — Docker required)
+        run: uv run pytest -m integration --timeout=360 -x

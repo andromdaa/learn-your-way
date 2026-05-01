@@ -60,6 +60,11 @@ class ReplaceSourceTooThinError(Exception):
             f"(min {_MIN_BODY_CHARS} chars, {_MIN_BODY_WORDS} words)"
         )
 
+    def __reduce__(self) -> tuple[type, tuple[str, int, int]]:
+        # Default pickle reconstructs via the joined message string, losing
+        # the structured attributes and causing TypeError on unpickle.
+        return (self.__class__, (self.concept_id, self.char_count, self.word_count))
+
 
 def _extract_body_text(concept: ConceptNode) -> str:
     """Return concept.summary with a leading title line stripped if present.
