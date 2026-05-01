@@ -4,6 +4,7 @@ All HTTP calls are intercepted by httpx.MockTransport — no running Ollama requ
 """
 
 import json
+import pickle
 from typing import Any
 
 import httpx
@@ -158,3 +159,23 @@ def test_custom_timeout_and_retries() -> None:
     )
     assert client.timeout == 120.0
     assert client.max_retries == 5
+
+
+# ---------------------------------------------------------------------------
+# Pickle round-trip (Arq result deserialization)
+# ---------------------------------------------------------------------------
+
+
+def test_ollama_error_survives_pickle_round_trip() -> None:
+    # Regression: Arq stores worker exceptions in Redis via pickle and
+    # reconstructs them when the API polls for the job result. Without a
+    # __reduce__ override, OllamaError(__init__(status_code, body)) would
+    # be reconstructed with only its formatted message string, raising
+    # TypeError → arq.jobs.DeserializationError → 500 from the API.
+    original = OllamaError(503, "service unavailable: model loading")
+    restored = pickle.loads(pickle.dumps(original))
+
+    assert isinstance(restored, OllamaError)
+    assert restored.status_code == 503
+    assert restored.body == "service unavailable: model loading"
+    assert str(restored) == str(original)
