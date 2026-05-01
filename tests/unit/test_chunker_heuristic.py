@@ -96,6 +96,51 @@ def test_single_section_no_heading() -> None:
     assert nodes[0].source_spans[0].char_end == 21
 
 
+def test_prerequisites_form_linear_chain() -> None:
+    """Each concept (except the first) lists the previous concept as a prerequisite."""
+    chunker = HeuristicChunker(doc_id="test-doc")
+    nodes = chunker.chunk(_TINY_DOC)
+    assert nodes[0].prerequisites == []
+    assert nodes[1].prerequisites == [nodes[0].id]
+
+
+def test_single_node_has_no_prerequisites() -> None:
+    """A document that produces only one node must have prerequisites=[]."""
+    doc = ParsedDocument(
+        source_path="t.pdf",
+        text="Only section.",
+        blocks=[
+            ParsedBlock(
+                block_id="b1",
+                page_number=1,
+                block_type="section_header",
+                text="Only section.",
+                char_start=0,
+                char_end=13,
+            )
+        ],
+        page_count=1,
+    )
+    chunker = HeuristicChunker(doc_id="single-doc")
+    nodes = chunker.chunk(doc)
+    assert len(nodes) == 1
+    assert nodes[0].prerequisites == []
+
+
+def test_chunk_output_produces_multinode_mindmap() -> None:
+    """Chunked nodes with prerequisites yield a multi-node mind map."""
+    from lesson_graph.models import LessonGraph, PersonalizationProfile
+    from lyw_core.modalities.mindmap import MindMapGenerator
+
+    chunker = HeuristicChunker(doc_id="test-doc")
+    nodes = chunker.chunk(_TINY_DOC)
+    graph = LessonGraph(id="g1", source_id="test-doc", concepts=nodes)
+    profile = PersonalizationProfile(grade_level="8", interests=["science"])
+    out = MindMapGenerator().generate(graph, profile)
+    # Both concepts must appear as nodes in the diagram.
+    assert out.count('["') == 2
+
+
 def test_long_body_splits_at_block_boundary() -> None:
     """Multiple body blocks exceeding max_chars are split into separate nodes."""
     body1 = "x" * 40
