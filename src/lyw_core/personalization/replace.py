@@ -9,6 +9,7 @@ See docs/plans/phase-2/T7-example-replacement.md.
 from __future__ import annotations
 
 import json
+import re
 
 import structlog
 from pydantic import BaseModel, ValidationError
@@ -117,12 +118,30 @@ class ExampleReplacer:
 
         return accepted
 
+    @staticmethod
+    def _strip_fences(raw: str) -> str:
+        """Strip markdown code fences from a model response.
+
+        Handles ` ```json`, ` ```JSON`, and bare ` ``` ` wrappers so that
+        models (e.g. gemma3:4b) which wrap their JSON array in fences do not
+        cause a spurious JSONDecodeError.
+        """
+        stripped = raw.strip()
+        match = re.fullmatch(
+            r"```(?:json|JSON)?\s*\n?(.*?)\n?```",
+            stripped,
+            re.DOTALL,
+        )
+        if match:
+            return match.group(1).strip()
+        return raw
+
     def _parse_candidates(
         self, raw: str, *, concept_id: str
     ) -> list[_ModelReplacement]:
         """Parse the model's JSON-array response. Returns [] on any failure."""
         try:
-            data = json.loads(raw)
+            data = json.loads(self._strip_fences(raw))
         except json.JSONDecodeError as exc:
             _logger.warning(
                 "example_replacement_parse_failed",

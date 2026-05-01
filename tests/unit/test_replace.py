@@ -173,3 +173,48 @@ async def test_replace_calls_model_with_interests() -> None:
     combined = " ".join(m["content"] for m in messages)
     assert "soccer" in combined
     assert "cooking" in combined
+
+
+async def test_replace_handles_json_fenced_response() -> None:
+    """Model wrapping JSON in ```json ... ``` fences is parsed correctly."""
+    fenced = f"```json\n{_TWO_REPLACEMENTS_JSON}\n```"
+    model = AsyncMock()
+    model.complete = AsyncMock(return_value=fenced)
+    validator = MagicMock()
+    validator.validate = MagicMock(return_value=ValidationResult(passed=True))
+
+    replacer = ExampleReplacer(model_client=model, faithfulness_validator=validator)
+    concept = _concept()
+    records = await replacer.replace(concept, _profile(), _graph(concept))
+
+    assert len(records) == 2
+
+
+async def test_replace_handles_bare_fenced_response() -> None:
+    """Model wrapping JSON in bare ``` ... ``` fences is parsed correctly."""
+    fenced = f"```\n{_TWO_REPLACEMENTS_JSON}\n```"
+    model = AsyncMock()
+    model.complete = AsyncMock(return_value=fenced)
+    validator = MagicMock()
+    validator.validate = MagicMock(return_value=ValidationResult(passed=True))
+
+    replacer = ExampleReplacer(model_client=model, faithfulness_validator=validator)
+    concept = _concept()
+    records = await replacer.replace(concept, _profile(), _graph(concept))
+
+    assert len(records) == 2
+
+
+async def test_replace_handles_json_uppercase_fenced_response() -> None:
+    """Model wrapping JSON in ```JSON ... ``` fences (uppercase) is parsed correctly."""
+    fenced = f"```JSON\n{_TWO_REPLACEMENTS_JSON}\n```"
+    model = AsyncMock()
+    model.complete = AsyncMock(return_value=fenced)
+    validator = MagicMock()
+    validator.validate = MagicMock(return_value=ValidationResult(passed=True))
+
+    replacer = ExampleReplacer(model_client=model, faithfulness_validator=validator)
+    concept = _concept()
+    records = await replacer.replace(concept, _profile(), _graph(concept))
+
+    assert len(records) == 2
