@@ -30,6 +30,52 @@ from lyw_core.validators.faithfulness import (
 
 _logger = structlog.get_logger(__name__)
 
+# Minimum body-text size required before we will hand a concept to the LLM for
+# example replacement. The replace prompt embeds only ``concept.summary``; if
+# that is effectively just a heading or otherwise lacks teachable content, the
+# LLM emits an interest-themed flourish unmoored from the source (issue #77).
+# Both gates apply: 200 chars roughly equals ~30 words at average English word
+# length; either signal trips the guard. A heading-only summary
+# (e.g. "EQUATIONS AND INEQUALITIES") trips reliably while substantive
+# single-paragraph concepts pass.
+_MIN_BODY_CHARS = 200
+_MIN_BODY_WORDS = 30
+
+
+class ReplaceSourceTooThinError(Exception):
+    """Raised when a concept's summary lacks enough teachable content to replace.
+
+    The replace generator embeds ``concept.summary`` directly into the LLM
+    prompt; when the summary is effectively a heading or otherwise too thin,
+    any "replacement" the model produces is unmoored from the source. The
+    orchestrator surfaces this as a ``failed`` job status (no asset persisted).
+    """
+
+    def __init__(self, concept_id: str, char_count: int, word_count: int) -> None:
+        self.concept_id = concept_id
+        self.char_count = char_count
+        self.word_count = word_count
+        super().__init__(
+            f"concept {concept_id!r} summary too thin for replace generator: "
+            f"{char_count} chars, {word_count} words "
+            f"(min {_MIN_BODY_CHARS} chars, {_MIN_BODY_WORDS} words)"
+        )
+
+
+def _extract_body_text(concept: ConceptNode) -> str:
+    """Return concept.summary with a leading title line stripped if present.
+
+    The heuristic chunker falls back to ``summary = title`` when the source
+    span has no body content, and substantive summaries sometimes echo the
+    title in the first line. Stripping a leading title-match (case-insensitive)
+    yields the actual teachable body for thresholding purposes.
+    """
+    summary = concept.summary.strip()
+    title = concept.title.strip()
+    if title and summary.lower().startswith(title.lower()):
+        summary = summary[len(title) :].lstrip(" \t\n:.-")
+    return summary
+
 
 class _ModelReplacement(BaseModel):
     """Schema for one element in the model's JSON-array response."""
@@ -65,7 +111,35 @@ class ExampleReplacer:
 
         Returns the list of accepted ReplacementRecords. Replacements failing
         the faithfulness gate are discarded (warning logged), not raised.
+
+        Raises
+        ------
+        ReplaceSourceTooThinError
+            If ``concept.summary`` (sans leading title) has fewer than
+            ``_MIN_BODY_CHARS`` characters or ``_MIN_BODY_WORDS`` words. This
+            pre-flight gate prevents the LLM from being asked to "replace"
+            content that isn't there (issue #77). Distinct from the
+            JSON-fence parse fix in #64: parsing succeeds in the thin-source
+            case but the result is non-substantive because the *input* was.
         """
+        body = _extract_body_text(concept)
+        char_count = len(body)
+        word_count = len(body.split())
+        if char_count < _MIN_BODY_CHARS or word_count < _MIN_BODY_WORDS:
+            _logger.warning(
+                "example_replacement_source_too_thin",
+                concept_id=concept.id,
+                char_count=char_count,
+                word_count=word_count,
+                min_chars=_MIN_BODY_CHARS,
+                min_words=_MIN_BODY_WORDS,
+            )
+            raise ReplaceSourceTooThinError(
+                concept_id=concept.id,
+                char_count=char_count,
+                word_count=word_count,
+            )
+
         messages = build_replace_messages(concept, profile)
         raw = await self._model.complete(messages)
 

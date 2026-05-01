@@ -32,10 +32,20 @@ def _span() -> SourceSpan:
 
 
 def _concept(cid: str = "c1") -> ConceptNode:
+    # Summary is intentionally above the ReplaceSourceTooThinError thresholds
+    # (>=200 chars, >=30 words AFTER the leading title is stripped) so the
+    # ``replace`` path in personalize_concept is exercised end-to-end here.
+    # A separate test covers the thin-summary failure case.
     return ConceptNode(
         id=cid,
         title="Photosynthesis",
-        summary="Plants use sunlight to make food.",
+        summary=(
+            "Photosynthesis is like a tiny factory inside a leaf, where "
+            "chloroplasts capture sunlight and use water and carbon dioxide "
+            "from the air to build sugar molecules. Imagine a green machine "
+            "that turns sunlight into food, releasing oxygen as a useful "
+            "by-product for the rest of the living world to breathe."
+        ),
         learning_objective="Explain photosynthesis.",
         source_spans=[_span()],
     )
@@ -352,6 +362,51 @@ async def test_personalize_concept_replace_profile_not_found(tmp_path: Path) -> 
             profile_id="missing-profile",
             kind="replace",
         )
+
+
+@pytest.mark.asyncio
+async def test_personalize_concept_replace_raises_on_thin_source(
+    tmp_path: Path,
+) -> None:
+    """Issue #77: thin concept.summary => ReplaceSourceTooThinError propagates and no asset row is saved.
+
+    Distinct from #64 (markdown-fence parse failure produced empty asset);
+    here parsing is not even attempted because the *input* fails the
+    pre-flight gate. The orchestrator does not catch the exception; the
+    Arq job ends with success=False and the API surfaces status="failed"
+    via the existing #66 path. This test asserts no DB row is written.
+    """
+    from lyw_core.personalization.replace import ReplaceSourceTooThinError
+    from lyw_core.worker.jobs.personalize import personalize_concept
+
+    ctx = _make_ctx(tmp_path)
+    # Override the lesson graph with a concept whose summary is just the title
+    # (heuristic-chunker fallback for a heading-only span). After title strip
+    # the body is empty — both gates trip.
+    thin_concept = ConceptNode(
+        id="c1",
+        title="EQUATIONS AND INEQUALITIES",
+        summary="EQUATIONS AND INEQUALITIES",
+        learning_objective="Solve equations and inequalities.",
+        source_spans=[_span()],
+    )
+    thin_graph = LessonGraph(id="g1", source_id="src-1", concepts=[thin_concept])
+    ctx["db"].get_lesson_graph = AsyncMock(return_value=thin_graph)
+
+    with pytest.raises(ReplaceSourceTooThinError):
+        await personalize_concept(
+            ctx,
+            lesson_id="g1",
+            concept_id="c1",
+            profile_id="p1",
+            kind="replace",
+        )
+
+    # No asset row written; no model call made.
+    db: AsyncMock = ctx["db"]
+    db.save_derived_asset.assert_not_awaited()
+    model_client: AsyncMock = ctx["model_client"]
+    model_client.complete.assert_not_called()
 
 
 @pytest.mark.asyncio
