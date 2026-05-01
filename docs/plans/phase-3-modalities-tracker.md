@@ -1,5 +1,7 @@
 # Phase 3 Tracker — Modality Generators
 
+> ⚠️ **This document has been superseded.** Phase 3 modalities was cancelled per [ADR-0016](../adr/0016-scope-cut-phase-2-3.md). This tracker documents cancelled work. Do not act on these tasks. Refer to the ADR for the scope cut rationale.
+
 Compact index for Phase 3 task work. Detailed task files live in
 `docs/plans/phase-3/`. The source contract is
 `specs/phase-3-modalities.md`.

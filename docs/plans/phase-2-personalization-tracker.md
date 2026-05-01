@@ -1,5 +1,7 @@
 # Phase 2 Tracker — Personalization and Assessment
 
+> ⚠️ **This document has been superseded.** Phase 2 personalization was cancelled per [ADR-0016](../adr/0016-scope-cut-phase-2-3.md). This tracker documents cancelled work. Do not act on these tasks. Refer to the ADR for the scope cut rationale.
+
 Compact index for Phase 2 task work. Detailed task files live in
 `docs/plans/phase-2/`. The source contract remains
 `specs/phase-2-personalization.md`.

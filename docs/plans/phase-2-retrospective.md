@@ -1,5 +1,7 @@
 # Phase 2 Retrospective
 
+> ⚠️ **This document has been superseded.** The Phase 2 scope was cut per [ADR-0016](../adr/0016-scope-cut-phase-2-3.md). Only re-leveling and interest-based example replacement remain; all other deliverables documented here have been deleted. Refer to the ADR for the scope cut rationale.
+
 ## What shipped
 
 All nineteen spec deliverables from `specs/phase-2-personalization.md` landed, plus
