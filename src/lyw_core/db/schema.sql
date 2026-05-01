@@ -49,33 +49,6 @@ CREATE TABLE IF NOT EXISTS profiles (
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
 
-CREATE TABLE IF NOT EXISTS assessment_items (
-    id              TEXT PRIMARY KEY,
-    concept_id      TEXT NOT NULL REFERENCES concepts(id),
-    kind            TEXT NOT NULL,
-    prompt          TEXT NOT NULL,
-    rationale       TEXT NOT NULL,
-    difficulty      TEXT NOT NULL,
-    correct_answer  TEXT,
-    bloom_level     TEXT,
-    source_spans    TEXT NOT NULL,
-    quiz_id         TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_assessment_items_concept_id ON assessment_items(concept_id);
-
-CREATE TABLE IF NOT EXISTS attempts (
-    id              TEXT PRIMARY KEY,
-    profile_id      TEXT NOT NULL REFERENCES profiles(id),
-    item_id         TEXT NOT NULL REFERENCES assessment_items(id),
-    response        TEXT NOT NULL,
-    correct         INTEGER NOT NULL,
-    attempted_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
-    quiz_id         TEXT
-);
-
-CREATE INDEX IF NOT EXISTS idx_attempts_profile_id ON attempts(profile_id);
-
 CREATE TABLE IF NOT EXISTS derived_assets (
     id          TEXT PRIMARY KEY,
     lesson_id   TEXT NOT NULL,

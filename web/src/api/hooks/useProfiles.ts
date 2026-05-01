@@ -15,15 +15,6 @@ export type CreateProfileRequest = {
   goals: string[];
 };
 
-export type AttemptRecord = {
-  id: string;
-  profile_id: string;
-  item_id: string;
-  response: string;
-  correct: boolean;
-  attempted_at: string;
-};
-
 export function useProfiles() {
   return useQuery({
     queryKey: ["profiles"],
@@ -65,13 +56,5 @@ export function useDeleteProfile() {
   return useMutation({
     mutationFn: (profileId: string) => api.delete(`/profiles/${profileId}`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["profiles"] }),
-  });
-}
-
-export function useProfileAttempts(profileId: string | undefined) {
-  return useQuery({
-    queryKey: ["profile", profileId, "attempts"],
-    queryFn: () => api.get<AttemptRecord[]>(`/profiles/${profileId}/attempts`),
-    enabled: !!profileId,
   });
 }

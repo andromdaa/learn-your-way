@@ -5,7 +5,7 @@ All tests use in-memory SQLite — no filesystem, no external services.
 
 from __future__ import annotations
 
-from lesson_graph import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
+from lesson_graph import ConceptNode, LessonGraph, SourceSpan
 from lyw_core.db import Database
 from lyw_core.db.dao import DerivedAsset
 from lyw_core.profiles.models import LearnerProfile
@@ -34,20 +34,6 @@ def _graph(
     concepts: list[ConceptNode] | None = None,
 ) -> LessonGraph:
     return LessonGraph(id=gid, source_id=source_id, concepts=concepts or [_concept()])
-
-
-def _item(item_id: str, concept_id: str, quiz_id: str | None = None) -> AssessmentItem:
-    return AssessmentItem(
-        id=item_id,
-        kind="mcq",
-        prompt=f"Q for {concept_id}",
-        rationale="Rationale",
-        source_spans=[_span()],
-        difficulty="easy",
-        concept_id=concept_id,
-        correct_answer="A",
-        quiz_id=quiz_id,
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +168,7 @@ async def test_list_derived_assets_filtered_by_lesson() -> None:
         id="a1",
         lesson_id="l1",
         concept_id="c1",
-        kind="mnemonic",
+        kind="relevel",
         profile_id="p1",
         file_path="/f",
         created_at="2026-01-01T00:00:00Z",
@@ -191,7 +177,7 @@ async def test_list_derived_assets_filtered_by_lesson() -> None:
         id="a2",
         lesson_id="l2",
         concept_id="c1",
-        kind="mnemonic",
+        kind="relevel",
         profile_id="p1",
         file_path="/f",
         created_at="2026-01-01T00:00:00Z",
@@ -211,7 +197,7 @@ async def test_list_derived_assets_filtered_by_kind() -> None:
             id="a1",
             lesson_id="l1",
             concept_id="c1",
-            kind="mnemonic",
+            kind="replace",
             profile_id="p1",
             file_path="/f",
             created_at="2026-01-01T00:00:00Z",
@@ -228,7 +214,7 @@ async def test_list_derived_assets_filtered_by_kind() -> None:
             created_at="2026-01-01T00:00:00Z",
         )
     )
-    rows = await db.list_derived_assets("l1", kind="mnemonic")
+    rows = await db.list_derived_assets("l1", kind="replace")
     assert len(rows) == 1
     assert rows[0].id == "a1"
     await db.close()
@@ -241,7 +227,7 @@ async def test_list_derived_assets_filtered_by_profile() -> None:
             id="a1",
             lesson_id="l1",
             concept_id="c1",
-            kind="mnemonic",
+            kind="relevel",
             profile_id="p1",
             file_path="/f",
             created_at="2026-01-01T00:00:00Z",
@@ -252,7 +238,7 @@ async def test_list_derived_assets_filtered_by_profile() -> None:
             id="a2",
             lesson_id="l1",
             concept_id="c1",
-            kind="mnemonic",
+            kind="relevel",
             profile_id="p2",
             file_path="/f",
             created_at="2026-01-01T00:00:00Z",
@@ -261,45 +247,4 @@ async def test_list_derived_assets_filtered_by_profile() -> None:
     rows = await db.list_derived_assets("l1", profile_id="p1")
     assert len(rows) == 1
     assert rows[0].profile_id == "p1"
-    await db.close()
-
-
-# ---------------------------------------------------------------------------
-# list_quizzes
-# ---------------------------------------------------------------------------
-
-
-async def test_list_quizzes_empty() -> None:
-    db = await Database.connect(":memory:")
-    await db.add_source("src-1", "/data/src.pdf", "sha1")
-    await db.upsert_lesson_graph(_graph("g1", "src-1"))
-    quizzes = await db.list_quizzes("g1")
-    assert quizzes == []
-    await db.close()
-
-
-async def test_list_quizzes_returns_quiz_with_item_count() -> None:
-    db = await Database.connect(":memory:")
-    await db.add_source("src-1", "/data/src.pdf", "sha1")
-    await db.upsert_lesson_graph(
-        _graph("g1", "src-1", [_concept("c1"), _concept("c2")])
-    )
-
-    await db.add_assessment_item(_item("i1", "c1", quiz_id="quiz-1"))
-    await db.add_assessment_item(_item("i2", "c2", quiz_id="quiz-1"))
-
-    quizzes = await db.list_quizzes("g1")
-    assert len(quizzes) == 1
-    assert quizzes[0].quiz_id == "quiz-1"
-    assert quizzes[0].item_count == 2
-    await db.close()
-
-
-async def test_list_quizzes_excludes_items_without_quiz_id() -> None:
-    db = await Database.connect(":memory:")
-    await db.add_source("src-1", "/data/src.pdf", "sha1")
-    await db.upsert_lesson_graph(_graph("g1", "src-1", [_concept("c1")]))
-    await db.add_assessment_item(_item("i1", "c1", quiz_id=None))
-    quizzes = await db.list_quizzes("g1")
-    assert quizzes == []
     await db.close()

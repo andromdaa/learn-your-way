@@ -9,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 
 from lesson_graph import (
-    AssessmentItem,
     ConceptNode,
     DerivedAsset,
     LessonGraph,
@@ -144,7 +143,8 @@ def test_concept_node_provenance_rejects_invalid() -> None:
         )
 
 
-def test_concept_node_temporal_position_defaults_to_none() -> None:
+def test_concept_node_does_not_serialise_temporal_position() -> None:
+    """temporal_position was removed per ADR-0016; it must not be a field."""
     node = ConceptNode(
         id="c1",
         title="t",
@@ -152,114 +152,7 @@ def test_concept_node_temporal_position_defaults_to_none() -> None:
         learning_objective="lo",
         source_spans=[_span()],
     )
-    assert node.temporal_position is None
-
-
-def test_concept_node_temporal_position_round_trips() -> None:
-    node = ConceptNode(
-        id="c1",
-        title="t",
-        summary="s",
-        learning_objective="lo",
-        source_spans=[_span()],
-        temporal_position=3,
-    )
-    assert node.temporal_position == 3
-    rebuilt = ConceptNode.model_validate_json(node.model_dump_json())
-    assert rebuilt == node
-    assert rebuilt.temporal_position == 3
-
-
-def test_concept_node_temporal_position_absent_when_none() -> None:
-    """A node using the default (None) must not serialise temporal_position as a present key."""
-    node = ConceptNode(
-        id="c1",
-        title="t",
-        summary="s",
-        learning_objective="lo",
-        source_spans=[_span()],
-    )
-    data = node.model_dump(exclude_none=True)
-    assert "temporal_position" not in data
-
-
-# AssessmentItem ------------------------------------------------------------
-
-
-def _item(**kwargs: object) -> AssessmentItem:
-    defaults: dict[str, object] = {
-        "id": "q1",
-        "kind": "mcq",
-        "prompt": "p",
-        "rationale": "r",
-        "source_spans": [_span()],
-        "difficulty": "easy",
-        "concept_id": "c1",
-    }
-    defaults.update(kwargs)
-    return AssessmentItem(**defaults)
-
-
-def test_assessment_item_valid() -> None:
-    item = _item(
-        prompt="What is photosynthesis?",
-        rationale="Plants convert light into chemical energy.",
-    )
-    assert item.kind == "mcq"
-    assert item.concept_id == "c1"
-
-
-def test_assessment_item_requires_span() -> None:
-    with pytest.raises(ValidationError):
-        _item(source_spans=[])
-
-
-def test_assessment_item_rejects_unknown_kind() -> None:
-    with pytest.raises(ValidationError):
-        _item(kind="essay")
-
-
-def test_assessment_item_rejects_empty_concept_id() -> None:
-    with pytest.raises(ValidationError):
-        _item(concept_id="")
-
-
-def test_assessment_item_correct_answer_and_bloom_level_round_trip() -> None:
-    item = _item(
-        prompt="What drives photosynthesis?",
-        rationale="Sunlight provides the energy for the reaction.",
-        difficulty="medium",
-        correct_answer="Sunlight",
-        bloom_level="understand",
-    )
-    assert item.correct_answer == "Sunlight"
-    assert item.bloom_level == "understand"
-    rebuilt = AssessmentItem.model_validate_json(item.model_dump_json())
-    assert rebuilt == item
-
-
-def test_assessment_item_correct_answer_and_bloom_level_default_to_none() -> None:
-    item = _item()
-    assert item.correct_answer is None
-    assert item.bloom_level is None
-
-
-def test_assessment_item_rejects_unknown_bloom_level() -> None:
-    with pytest.raises(ValidationError):
-        _item(bloom_level="synthesis")
-
-
-def test_assessment_item_quiz_id_defaults_to_none() -> None:
-    item = _item()
-    assert item.quiz_id is None
-
-
-def test_assessment_item_quiz_id_accepted() -> None:
-    item = _item(quiz_id="q-1")
-    assert item.quiz_id == "q-1"
-    rebuilt = AssessmentItem.model_validate_json(item.model_dump_json())
-    assert rebuilt == item
-    assert rebuilt.quiz_id == "q-1"
+    assert "temporal_position" not in node.model_dump()
 
 
 # DerivedAsset --------------------------------------------------------------
@@ -312,29 +205,26 @@ def test_derived_asset_rejects_modality_kinds() -> None:
             )
 
 
-def test_derived_asset_accepts_all_in_scope_kinds() -> None:
-    for kind in (
-        "immersive_text",
-        "image",
-        "mnemonic",
-    ):
-        asset = DerivedAsset(
-            id=f"a-{kind}",
-            kind=kind,
-            based_on_concepts=["c1"],
-            personalization_profile=_profile(),
-        )
-        assert asset.kind == kind
+def test_derived_asset_rejects_phase2_kinds() -> None:
+    """Phase-2 assessment kinds were removed per ADR-0016."""
+    for kind in ("mnemonic", "image"):
+        with pytest.raises(ValidationError):
+            DerivedAsset(
+                id=f"a-{kind}",
+                kind=kind,
+                based_on_concepts=["c1"],
+                personalization_profile=_profile(),
+            )
 
 
-def test_derived_asset_accepts_mnemonic_kind() -> None:
+def test_derived_asset_accepts_immersive_text() -> None:
     asset = DerivedAsset(
-        id="a-mnemonic",
-        kind="mnemonic",
+        id="a-it",
+        kind="immersive_text",
         based_on_concepts=["c1"],
         personalization_profile=_profile(),
     )
-    assert asset.kind == "mnemonic"
+    assert asset.kind == "immersive_text"
 
 
 # ReplacementRecord / PersonalizationProfile --------------------------------

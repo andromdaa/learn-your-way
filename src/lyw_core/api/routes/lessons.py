@@ -7,10 +7,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from lesson_graph.models import AssessmentItem, ConceptNode, LessonGraph
+from lesson_graph.models import ConceptNode, LessonGraph
 from lyw_core.api.app import get_db
 from lyw_core.api.schemas import StoredDerivedAsset
-from lyw_core.db.dao import Database, DerivedAsset, LessonSummary, QuizSummary
+from lyw_core.db.dao import Database, DerivedAsset, LessonSummary
 
 router = APIRouter()
 
@@ -20,11 +20,6 @@ class LessonSummaryResponse(BaseModel):
     source_id: str
     concept_count: int
     created_at: str
-
-
-class QuizSummaryResponse(BaseModel):
-    quiz_id: str
-    item_count: int
 
 
 @router.get(
@@ -73,30 +68,6 @@ async def get_concept_node(
 
 
 @router.get(
-    "/lessons/{lesson_id}/items",
-    response_model=list[AssessmentItem],
-    operation_id="listLessonItems",
-)
-async def list_lesson_items(
-    lesson_id: str,
-    db: Annotated[Database, Depends(get_db)],
-    concept_id: Annotated[str | None, Query()] = None,
-    quiz_id: Annotated[str | None, Query()] = None,
-) -> list[AssessmentItem]:
-    graph = await db.get_lesson_graph(lesson_id)
-    if graph is None:
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    if quiz_id is not None:
-        return await db.get_items_by_quiz_id(quiz_id)
-    if concept_id is not None:
-        return await db.get_items_by_concept(concept_id)
-    items: list[AssessmentItem] = []
-    for concept in graph.concepts:
-        items.extend(await db.get_items_by_concept(concept.id))
-    return items
-
-
-@router.get(
     "/lessons/{lesson_id}/assets",
     response_model=list[StoredDerivedAsset],
     operation_id="listLessonAssets",
@@ -113,17 +84,3 @@ async def list_lesson_assets(
     return await db.list_derived_assets(
         lesson_id, concept_id=concept_id, kind=kind, profile_id=profile_id
     )
-
-
-@router.get(
-    "/lessons/{lesson_id}/quizzes",
-    response_model=list[QuizSummaryResponse],
-    operation_id="listLessonQuizzes",
-)
-async def list_lesson_quizzes(
-    lesson_id: str,
-    db: Annotated[Database, Depends(get_db)],
-) -> list[QuizSummary]:
-    if await db.get_lesson_graph(lesson_id) is None:
-        raise HTTPException(status_code=404, detail="Lesson not found")
-    return await db.list_quizzes(lesson_id)

@@ -1,13 +1,7 @@
 import { createFileRoute, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
-import {
-  useLesson,
-  useLessonItems,
-  useLessonAssets,
-  useLessonQuizzes,
-} from "../api/hooks/useLessons";
+import { useLesson, useLessonAssets } from "../api/hooks/useLessons";
 import { useGenerateLesson } from "../api/hooks/useGenerate";
-import { useGenerateQuiz, useBulkGenerate } from "../api/hooks/useQuizzes";
 import { useProfiles } from "../api/hooks/useProfiles";
 import { useJobEvents } from "../api/sse";
 import AssetViewer from "../components/AssetViewer";
@@ -25,7 +19,7 @@ export const Route = createFileRoute("/lessons/$lessonId")({
   }),
 });
 
-const KINDS = ["relevel", "replace", "mnemonic"] as const;
+const KINDS = ["relevel", "replace"] as const;
 type Kind = (typeof KINDS)[number];
 
 function LessonWorkspace() {
@@ -42,8 +36,6 @@ function LessonWorkspace() {
   const { state: jobState, done: jobDone } = useJobEvents(jobId);
 
   const generateLesson = useGenerateLesson(lessonId);
-  const generateQuiz = useGenerateQuiz(lessonId);
-  const bulkGenerate = useBulkGenerate(lessonId);
 
   const selectedConcept = graph?.concepts.find((c) => c.id === selectedId) ?? graph?.concepts[0];
 
@@ -59,22 +51,6 @@ function LessonWorkspace() {
     );
   }
 
-  function handleGenerateQuiz() {
-    if (!profileId) return;
-    generateQuiz.mutate(
-      { profile_id: profileId, scope: "lesson" },
-      { onSuccess: (r) => setJobId(r.job_id) },
-    );
-  }
-
-  function handleBulkGenerate() {
-    if (!profileId) return;
-    bulkGenerate.mutate(
-      { profile_id: profileId, kinds: [...KINDS], skip_existing: true },
-      { onSuccess: (r) => setJobId(r.job_id) },
-    );
-  }
-
   if (isLoading) return <p>Loading lesson…</p>;
   if (!graph) return <p>Lesson not found.</p>;
 
@@ -83,7 +59,6 @@ function LessonWorkspace() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 3rem)" }}>
       <div style={{ display: "grid", gridTemplateColumns: "280px 1fr 220px", flex: 1, gap: 0, overflow: "hidden" }}>
-        {/* Left: concept graph */}
         <div style={{ borderRight: "1px solid #333", overflow: "hidden", display: "flex", flexDirection: "column" }}>
           <div style={{ padding: "0.75rem", borderBottom: "1px solid #333" }}>
             <strong>{lessonId.slice(0, 16)}…</strong>
@@ -100,7 +75,6 @@ function LessonWorkspace() {
           </div>
         </div>
 
-        {/* Middle: concept detail */}
         <div style={{ overflow: "auto", padding: "1rem" }}>
           {selectedConcept ? (
             <ConceptDetail
@@ -115,7 +89,6 @@ function LessonWorkspace() {
           )}
         </div>
 
-        {/* Right: actions */}
         <div
           style={{
             borderLeft: "1px solid #333",
@@ -141,7 +114,7 @@ function LessonWorkspace() {
             ))}
           </select>
 
-          <label style={{ fontSize: "0.8rem", color: "#999", marginTop: "0.25rem" }}>Modality</label>
+          <label style={{ fontSize: "0.8rem", color: "#999", marginTop: "0.25rem" }}>Kind</label>
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as Kind)}
@@ -160,22 +133,6 @@ function LessonWorkspace() {
             style={{ padding: "0.4rem", background: "#2563eb", color: "#fff", border: "none", borderRadius: 4 }}
           >
             Generate
-          </button>
-
-          <button
-            onClick={handleGenerateQuiz}
-            disabled={!activeProfile || generateQuiz.isPending}
-            style={{ padding: "0.4rem", background: "#059669", color: "#fff", border: "none", borderRadius: 4 }}
-          >
-            Generate Quiz
-          </button>
-
-          <button
-            onClick={handleBulkGenerate}
-            disabled={!activeProfile || bulkGenerate.isPending}
-            style={{ padding: "0.4rem", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 4 }}
-          >
-            Bulk Generate All
           </button>
 
           {jobId && (
@@ -208,10 +165,6 @@ function LessonWorkspace() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// ConceptDetail — tabbed panel
-// ---------------------------------------------------------------------------
-
 type ConceptDetailProps = {
   concept: ConceptNode;
   lessonId: string;
@@ -220,11 +173,11 @@ type ConceptDetailProps = {
   onSelectConcept: (id: string) => void;
 };
 
-type Tab = "overview" | "spans" | "assets" | "items" | "quiz";
+type Tab = "overview" | "spans" | "assets";
 
 function ConceptDetail({ concept, lessonId, profileId, allConcepts, onSelectConcept }: ConceptDetailProps) {
   const [tab, setTab] = useState<Tab>("overview");
-  const tabs: Tab[] = ["overview", "spans", "assets", "items", "quiz"];
+  const tabs: Tab[] = ["overview", "spans", "assets"];
 
   return (
     <div>
@@ -255,8 +208,6 @@ function ConceptDetail({ concept, lessonId, profileId, allConcepts, onSelectConc
       )}
       {tab === "spans" && <SpansTab concept={concept} />}
       {tab === "assets" && <AssetsTab lessonId={lessonId} conceptId={concept.id} profileId={profileId} />}
-      {tab === "items" && <ItemsTab lessonId={lessonId} conceptId={concept.id} />}
-      {tab === "quiz" && <QuizTab lessonId={lessonId} />}
     </div>
   );
 }
@@ -275,10 +226,6 @@ function OverviewTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
       <Section label="Learning Objective">{concept.learning_objective}</Section>
       <Section label="Summary">{concept.summary}</Section>
-      {concept.bloom_level && <Section label="Bloom Level">{concept.bloom_level}</Section>}
-      {concept.temporal_position && (
-        <Section label="Temporal Position">{concept.temporal_position}</Section>
-      )}
       {prereqConcepts.length > 0 && (
         <Section label="Prerequisites">
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -339,10 +286,7 @@ function SpanExcerpt({ span }: { span: SourceSpan }) {
     <div style={{ background: "#1e1e2e", padding: "0.75rem", borderRadius: 6 }}>
       <div style={{ fontSize: "0.75rem", color: "#666", marginBottom: "0.4rem" }}>
         p.{span.page_start}–{span.page_end} ·{" "}
-        <a
-          href={`/sources/${span.doc_id}`}
-          style={{ color: "#60a5fa" }}
-        >
+        <a href={`/sources/${span.doc_id}`} style={{ color: "#60a5fa" }}>
           {span.doc_id.slice(0, 12)}…
         </a>
       </div>
@@ -399,56 +343,6 @@ function AssetsTab({
           )}
         </div>
       ))}
-    </div>
-  );
-}
-
-function ItemsTab({ lessonId, conceptId }: { lessonId: string; conceptId: string }) {
-  const { data: items, isLoading } = useLessonItems(lessonId, { conceptId });
-
-  if (isLoading) return <p style={{ color: "#999" }}>Loading…</p>;
-  if (!items?.length) return <p style={{ color: "#666" }}>No assessment items yet.</p>;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      {items.map((item) => (
-        <div key={item.id} style={{ background: "#1e1e2e", padding: "0.75rem", borderRadius: 6 }}>
-          <p style={{ margin: "0 0 0.5rem", fontWeight: "bold" }}>{item.prompt}</p>
-          {item.options && (
-            <ul style={{ margin: "0 0 0.5rem", paddingLeft: "1.25rem" }}>
-              {item.options.map((opt, i) => (
-                <li key={i} style={{ color: opt === item.correct_answer ? "#4ade80" : "#ccc" }}>
-                  {opt}
-                </li>
-              ))}
-            </ul>
-          )}
-          <p style={{ margin: 0, fontSize: "0.85rem", color: "#999" }}>
-            {item.rationale}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function QuizTab({ lessonId }: { lessonId: string }) {
-  const { data: quizzes, isLoading } = useLessonQuizzes(lessonId);
-
-  if (isLoading) return <p style={{ color: "#999" }}>Loading…</p>;
-
-  return (
-    <div>
-      {!quizzes?.length && <p style={{ color: "#666" }}>No quizzes yet. Use "Generate Quiz" in the Actions panel.</p>}
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        {quizzes?.map((q) => (
-          <li key={q.quiz_id}>
-            <a href={`/quizzes/${q.quiz_id}`} style={{ color: "#60a5fa" }}>
-              {q.quiz_id.slice(0, 12)}… ({q.item_count} items)
-            </a>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

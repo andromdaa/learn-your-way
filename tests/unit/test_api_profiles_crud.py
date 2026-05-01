@@ -10,7 +10,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from lyw_core.api.app import create_app, get_arq_redis, get_data_dir, get_db
-from lyw_core.db.dao import AttemptRecord
 from lyw_core.profiles.models import LearnerProfile
 
 
@@ -22,17 +21,6 @@ async def _null_lifespan(app: FastAPI) -> AsyncIterator[None]:
 def _profile(profile_id: str = "p1") -> LearnerProfile:
     return LearnerProfile(
         id=profile_id, grade_level="8", interests=["math"], goals=["pass exam"]
-    )
-
-
-def _attempt(attempt_id: str = "a1", profile_id: str = "p1") -> AttemptRecord:
-    return AttemptRecord(
-        id=attempt_id,
-        profile_id=profile_id,
-        item_id="item-1",
-        response="A",
-        correct=True,
-        attempted_at="2026-01-01T00:00:00",
     )
 
 
@@ -154,39 +142,3 @@ def test_delete_profile_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-# ---------------------------------------------------------------------------
-# GET /profiles/{profile_id}/attempts
-# ---------------------------------------------------------------------------
-
-
-def test_list_profile_attempts_returns_attempts() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_profile.return_value = _profile("p1")
-    mock_db.get_profile_attempts.return_value = [
-        _attempt("a1", "p1"),
-        _attempt("a2", "p1"),
-    ]
-    with _make_client(mock_db) as c:
-        response = c.get("/profiles/p1/attempts")
-    assert response.status_code == 200
-    body = response.json()
-    assert len(body) == 2
-    assert body[0]["profile_id"] == "p1"
-
-
-def test_list_profile_attempts_empty() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_profile.return_value = _profile("p1")
-    mock_db.get_profile_attempts.return_value = []
-    with _make_client(mock_db) as c:
-        response = c.get("/profiles/p1/attempts")
-    assert response.status_code == 200
-    assert response.json() == []
-
-
-def test_list_profile_attempts_profile_not_found() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_profile.return_value = None
-    with _make_client(mock_db) as c:
-        response = c.get("/profiles/no-such-profile/attempts")
-    assert response.status_code == 404

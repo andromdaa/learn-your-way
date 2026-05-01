@@ -79,7 +79,7 @@ def client() -> Iterator[TestClient]:
 def test_post_generate_returns_202(client: TestClient) -> None:
     response = client.post(
         "/lessons/lesson-1/generate",
-        json={"concept_id": "c1", "profile_id": "p1", "kind": "mnemonic"},
+        json={"concept_id": "c1", "profile_id": "p1", "kind": "relevel"},
     )
     assert response.status_code == 202
 
@@ -87,7 +87,7 @@ def test_post_generate_returns_202(client: TestClient) -> None:
 def test_post_generate_response_schema(client: TestClient) -> None:
     response = client.post(
         "/lessons/lesson-1/generate",
-        json={"concept_id": "c1", "profile_id": "p1", "kind": "mnemonic"},
+        json={"concept_id": "c1", "profile_id": "p1", "kind": "relevel"},
     )
     body = response.json()
     assert body["job_id"] == "job-abc"
@@ -133,7 +133,7 @@ def test_post_generate_lesson_not_found_returns_404() -> None:
     with TestClient(_app) as c:
         response = c.post(
             "/lessons/nonexistent/generate",
-            json={"concept_id": "c1", "profile_id": "p1", "kind": "mnemonic"},
+            json={"concept_id": "c1", "profile_id": "p1", "kind": "relevel"},
         )
     assert response.status_code == 404
 
@@ -147,7 +147,7 @@ def test_post_generate_invalid_kind_returns_422(client: TestClient) -> None:
 
 
 def test_post_generate_all_valid_kinds(client: TestClient) -> None:
-    for kind in ("relevel", "replace", "mnemonic"):
+    for kind in ("relevel", "replace"):
         response = client.post(
             "/lessons/lesson-1/generate",
             json={"concept_id": "c1", "profile_id": "p1", "kind": kind},
@@ -155,9 +155,9 @@ def test_post_generate_all_valid_kinds(client: TestClient) -> None:
         assert response.status_code == 202, f"kind={kind!r} should be accepted"
 
 
-def test_post_generate_modality_kinds_rejected(client: TestClient) -> None:
-    """Modality kinds were removed per ADR-0016 and must be rejected by the schema."""
-    for kind in ("mind_map", "timeline", "slides"):
+def test_post_generate_dropped_kinds_rejected(client: TestClient) -> None:
+    """Modality and Phase-2 kinds were removed per ADR-0016 and must be rejected."""
+    for kind in ("mind_map", "timeline", "slides", "mnemonic"):
         response = client.post(
             "/lessons/lesson-1/generate",
             json={"concept_id": "c1", "profile_id": "p1", "kind": kind},
@@ -180,7 +180,7 @@ def test_post_generate_duplicate_job_returns_409() -> None:
     with TestClient(_app) as c:
         response = c.post(
             "/lessons/lesson-1/generate",
-            json={"concept_id": "c1", "profile_id": "p1", "kind": "mnemonic"},
+            json={"concept_id": "c1", "profile_id": "p1", "kind": "relevel"},
         )
     assert response.status_code == 409
 

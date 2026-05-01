@@ -62,7 +62,7 @@ async def test_bulk_generate_skip_existing_omits_already_done() -> None:
 
     db = AsyncMock()
     db.get_lesson_graph.return_value = _graph([_concept("c1"), _concept("c2")])
-    db.get_derived_asset = AsyncMock(side_effect=lambda l, c, k, p: MagicMock() if c == "c1" else None)
+    db.get_derived_asset = AsyncMock(side_effect=lambda lid, c, k, p: MagicMock() if c == "c1" else None)
     ctx = _make_ctx(db)
 
     result = await bulk_generate(

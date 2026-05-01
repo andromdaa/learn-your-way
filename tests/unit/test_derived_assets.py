@@ -70,19 +70,19 @@ async def test_save_and_get_derived_asset() -> None:
         id=str(uuid.uuid4()),
         lesson_id="g1",
         concept_id="c1",
-        kind="mnemonic",
+        kind="relevel",
         profile_id="p1",
         file_path="/data/assets/ab/abcdef.txt",
         created_at="",
     )
     await db.save_derived_asset(asset)
 
-    fetched = await db.get_derived_asset("g1", "c1", "mnemonic", "p1")
+    fetched = await db.get_derived_asset("g1", "c1", "relevel", "p1")
     assert fetched is not None
     assert fetched.id == asset.id
     assert fetched.lesson_id == "g1"
     assert fetched.concept_id == "c1"
-    assert fetched.kind == "mnemonic"
+    assert fetched.kind == "relevel"
     assert fetched.profile_id == "p1"
     assert fetched.file_path == "/data/assets/ab/abcdef.txt"
     assert fetched.created_at != ""  # filled by SQLite DEFAULT
@@ -91,7 +91,7 @@ async def test_save_and_get_derived_asset() -> None:
 
 async def test_get_derived_asset_missing_returns_none() -> None:
     db = await Database.connect(":memory:")
-    result = await db.get_derived_asset("g1", "c1", "mnemonic", "p1")
+    result = await db.get_derived_asset("g1", "c1", "relevel", "p1")
     assert result is None
     await db.close()
 
@@ -180,42 +180,6 @@ def _make_ctx(tmp_path: Path) -> dict[str, Any]:
         "data_dir": data_dir,
         "model_client": model_client,
     }
-
-
-@pytest.mark.asyncio
-async def test_personalize_concept_mnemonic(tmp_path: Path) -> None:
-    from lyw_core.worker.jobs.personalize import personalize_concept
-
-    ctx = _make_ctx(tmp_path)
-
-    with patch(
-        "lyw_core.worker.jobs.personalize.SourceFaithfulnessValidator"
-    ) as mock_validator_cls:
-        mock_validator = MagicMock()
-        from lyw_core.validators.base import ValidationResult
-
-        mock_validator.validate = MagicMock(return_value=ValidationResult(passed=True))
-        mock_validator_cls.return_value = mock_validator
-
-        result = await personalize_concept(
-            ctx,
-            lesson_id="g1",
-            concept_id="c1",
-            profile_id="p1",
-            kind="mnemonic",
-        )
-
-    assert "asset_id" in result
-    assert "file_path" in result
-    assert result["file_path"].endswith(".txt")
-
-    db: AsyncMock = ctx["db"]
-    db.save_derived_asset.assert_awaited_once()
-    saved: DerivedAsset = db.save_derived_asset.call_args[0][0]
-    assert saved.kind == "mnemonic"
-    assert saved.lesson_id == "g1"
-    assert saved.concept_id == "c1"
-    assert saved.profile_id == "p1"
 
 
 @pytest.mark.asyncio
@@ -310,7 +274,7 @@ async def test_personalize_concept_lesson_not_found(tmp_path: Path) -> None:
             lesson_id="no-such",
             concept_id="c1",
             profile_id="p1",
-            kind="mnemonic",
+            kind="relevel",
         )
 
 
@@ -326,7 +290,7 @@ async def test_personalize_concept_concept_not_found(tmp_path: Path) -> None:
             lesson_id="g1",
             concept_id="no-such-concept",
             profile_id="p1",
-            kind="mnemonic",
+            kind="relevel",
         )
 
 
@@ -429,7 +393,7 @@ async def test_personalize_concept_writes_file_to_data_dir(tmp_path: Path) -> No
             lesson_id="g1",
             concept_id="c1",
             profile_id="p1",
-            kind="mnemonic",
+            kind="relevel",
         )
 
     assert Path(result["file_path"]).exists()

@@ -6,7 +6,6 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from arq.jobs import JobStatus
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -116,13 +115,13 @@ def _make_mock_pubsub() -> AsyncMock:
         async def subscribe(self, *_channels: str) -> None:
             pass
 
-        async def __aenter__(self) -> "_MockPS":
+        async def __aenter__(self) -> _MockPS:
             return self
 
         async def __aexit__(self, *_args: object) -> None:
             pass
 
-        async def listen(self) -> AsyncIterator[dict]:
+        async def listen(self) -> AsyncIterator[dict[str, object]]:
             import json
 
             yield {
@@ -137,20 +136,20 @@ def _make_mock_pubsub() -> AsyncMock:
 
 def test_stream_job_events_returns_event_stream() -> None:
     mock_arq = _make_mock_pubsub()
-    with _make_client(mock_arq) as c:
+    with _make_client(mock_arq) as c:  # noqa: SIM117
         with c.stream("GET", "/v1/jobs/j1/events") as response:
             assert response.headers["content-type"].startswith("text/event-stream")
 
 
 def test_stream_lesson_job_events_returns_event_stream() -> None:
     mock_arq = _make_mock_pubsub()
-    with _make_client(mock_arq) as c:
+    with _make_client(mock_arq) as c:  # noqa: SIM117
         with c.stream("GET", "/v1/lessons/l1/jobs/events") as response:
             assert response.headers["content-type"].startswith("text/event-stream")
 
 
 def test_stream_all_job_events_returns_event_stream() -> None:
     mock_arq = _make_mock_pubsub()
-    with _make_client(mock_arq) as c:
+    with _make_client(mock_arq) as c:  # noqa: SIM117
         with c.stream("GET", "/v1/jobs/events") as response:
             assert response.headers["content-type"].startswith("text/event-stream")

@@ -10,9 +10,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from lesson_graph import ConceptNode, LessonGraph, SourceSpan
-from lesson_graph.models import AssessmentItem
 from lyw_core.api.app import create_app, get_arq_redis, get_data_dir, get_db
-from lyw_core.db.dao import DerivedAsset, LessonSummary, QuizSummary
+from lyw_core.db.dao import DerivedAsset, LessonSummary
 
 
 @asynccontextmanager
@@ -48,20 +47,6 @@ def _graph(lesson_id: str = "g1") -> LessonGraph:
                 prerequisites=["c1"],
             ),
         ],
-    )
-
-
-def _item(item_id: str, concept_id: str, quiz_id: str | None = None) -> AssessmentItem:
-    return AssessmentItem(
-        id=item_id,
-        kind="mcq",
-        prompt=f"Q for {concept_id}",
-        rationale="Because.",
-        source_spans=[_span()],
-        difficulty="easy",
-        concept_id=concept_id,
-        correct_answer="A",
-        quiz_id=quiz_id,
     )
 
 
@@ -139,57 +124,6 @@ def test_get_concept_node_concept_not_found() -> None:
 
 
 # ---------------------------------------------------------------------------
-# GET /lessons/{lesson_id}/items
-# ---------------------------------------------------------------------------
-
-
-def test_list_lesson_items_all_concepts() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_lesson_graph.return_value = _graph()
-    mock_db.get_items_by_concept.side_effect = [
-        [_item("i1", "c1")],
-        [_item("i2", "c2")],
-    ]
-    with _make_client(mock_db) as c:
-        response = c.get("/lessons/g1/items")
-    assert response.status_code == 200
-    assert len(response.json()) == 2
-
-
-def test_list_lesson_items_filter_by_concept() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_lesson_graph.return_value = _graph()
-    mock_db.get_items_by_concept.return_value = [_item("i1", "c1")]
-    with _make_client(mock_db) as c:
-        response = c.get("/lessons/g1/items?concept_id=c1")
-    assert response.status_code == 200
-    assert len(response.json()) == 1
-    mock_db.get_items_by_concept.assert_called_once_with("c1")
-
-
-def test_list_lesson_items_filter_by_quiz() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_lesson_graph.return_value = _graph()
-    mock_db.get_items_by_quiz_id.return_value = [
-        _item("i1", "c1", quiz_id="quiz-1"),
-        _item("i2", "c2", quiz_id="quiz-1"),
-    ]
-    with _make_client(mock_db) as c:
-        response = c.get("/lessons/g1/items?quiz_id=quiz-1")
-    assert response.status_code == 200
-    assert len(response.json()) == 2
-    mock_db.get_items_by_quiz_id.assert_called_once_with("quiz-1")
-
-
-def test_list_lesson_items_lesson_not_found() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_lesson_graph.return_value = None
-    with _make_client(mock_db) as c:
-        response = c.get("/lessons/no-lesson/items")
-    assert response.status_code == 404
-
-
-# ---------------------------------------------------------------------------
 # GET /lessons/{lesson_id}/assets
 # ---------------------------------------------------------------------------
 
@@ -199,7 +133,7 @@ def test_list_lesson_assets_returns_filtered_list() -> None:
         id="a1",
         lesson_id="g1",
         concept_id="c1",
-        kind="mnemonic",
+        kind="relevel",
         profile_id="p1",
         file_path="/f/a.txt",
         created_at="2026-01-01T00:00:00",
@@ -208,13 +142,13 @@ def test_list_lesson_assets_returns_filtered_list() -> None:
     mock_db.get_lesson_graph.return_value = _graph()
     mock_db.list_derived_assets.return_value = [asset]
     with _make_client(mock_db) as c:
-        response = c.get("/lessons/g1/assets?kind=mnemonic&profile_id=p1")
+        response = c.get("/lessons/g1/assets?kind=relevel&profile_id=p1")
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 1
     assert body[0]["id"] == "a1"
     mock_db.list_derived_assets.assert_called_once_with(
-        "g1", concept_id=None, kind="mnemonic", profile_id="p1"
+        "g1", concept_id=None, kind="relevel", profile_id="p1"
     )
 
 
@@ -223,40 +157,4 @@ def test_list_lesson_assets_lesson_not_found() -> None:
     mock_db.get_lesson_graph.return_value = None
     with _make_client(mock_db) as c:
         response = c.get("/lessons/no-lesson/assets")
-    assert response.status_code == 404
-
-
-# ---------------------------------------------------------------------------
-# GET /lessons/{lesson_id}/quizzes
-# ---------------------------------------------------------------------------
-
-
-def test_list_lesson_quizzes_returns_summaries() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_lesson_graph.return_value = _graph()
-    mock_db.list_quizzes.return_value = [QuizSummary(quiz_id="quiz-1", item_count=4)]
-    with _make_client(mock_db) as c:
-        response = c.get("/lessons/g1/quizzes")
-    assert response.status_code == 200
-    body = response.json()
-    assert len(body) == 1
-    assert body[0]["quiz_id"] == "quiz-1"
-    assert body[0]["item_count"] == 4
-
-
-def test_list_lesson_quizzes_empty() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_lesson_graph.return_value = _graph()
-    mock_db.list_quizzes.return_value = []
-    with _make_client(mock_db) as c:
-        response = c.get("/lessons/g1/quizzes")
-    assert response.status_code == 200
-    assert response.json() == []
-
-
-def test_list_lesson_quizzes_lesson_not_found() -> None:
-    mock_db = AsyncMock()
-    mock_db.get_lesson_graph.return_value = None
-    with _make_client(mock_db) as c:
-        response = c.get("/lessons/no-lesson/quizzes")
     assert response.status_code == 404

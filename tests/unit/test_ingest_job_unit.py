@@ -155,7 +155,6 @@ def _make_concept_no_spans(cid: str = "c_no_spans") -> ConceptNode:
         source_spans=[],
         prerequisites=[],
         provenance="heuristic",
-        temporal_position=None,
     )
     return concept
 

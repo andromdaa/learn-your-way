@@ -39,7 +39,7 @@ def test_healthz_all_healthy() -> None:
     mock_db._conn = AsyncMock()
     mock_db._conn.execute = AsyncMock()
 
-    with (
+    with (  # noqa: SIM117
         patch("lyw_core.api.routes.health.ping_redis", return_value=_healthy("redis")),
         patch("lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")),
         patch("lyw_core.api.routes.health._ping_ollama", return_value=ServiceHealth(ok=True)),
@@ -60,7 +60,7 @@ def test_healthz_redis_down_returns_200_with_ok_false() -> None:
     mock_db._conn = AsyncMock()
     mock_db._conn.execute = AsyncMock()
 
-    with (
+    with (  # noqa: SIM117
         patch("lyw_core.api.routes.health.ping_redis", return_value=_unhealthy("redis")),
         patch("lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")),
         patch("lyw_core.api.routes.health._ping_ollama", return_value=ServiceHealth(ok=True)),
@@ -79,7 +79,7 @@ def test_healthz_db_failure_still_returns_200() -> None:
     mock_db._conn = AsyncMock()
     mock_db._conn.execute = AsyncMock(side_effect=Exception("disk full"))
 
-    with (
+    with (  # noqa: SIM117
         patch("lyw_core.api.routes.health.ping_redis", return_value=_healthy("redis")),
         patch("lyw_core.api.routes.health.ping_qdrant", return_value=_healthy("qdrant")),
         patch("lyw_core.api.routes.health._ping_ollama", return_value=ServiceHealth(ok=True)),

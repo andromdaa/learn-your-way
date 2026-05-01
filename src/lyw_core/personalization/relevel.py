@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from lesson_graph.interfaces import ModelClient
 from lesson_graph.models import (
-    AssessmentItem,
     ConceptNode,
     LessonGraph,
     PersonalizationProfile,
@@ -64,18 +63,13 @@ class ReLeveler:
 
         # Gate via faithfulness: verify original_span is within the concept's
         # source spans in the lesson graph (guards against stale concept refs).
-        _check_item = AssessmentItem(
-            id="__relevel_check__",
-            kind="short_answer",
-            prompt=concept.summary[:200],
-            rationale="faithfulness gate for re-leveling",
-            source_spans=[original_span],
-            difficulty="easy",
-            concept_id=concept.id,
-        )
         run_validators(
             [self._faithfulness],
-            ItemValidationPayload(item=_check_item, lesson_graph=lesson_graph),
+            ItemValidationPayload(
+                concept_id=concept.id,
+                spans=[original_span],
+                lesson_graph=lesson_graph,
+            ),
         )
 
         personalization_profile = PersonalizationProfile(

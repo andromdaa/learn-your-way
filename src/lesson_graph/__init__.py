@@ -1,6 +1,5 @@
 from .interfaces import ChatMessage, ModelClient
 from .models import (
-    AssessmentItem,
     ConceptNode,
     DerivedAsset,
     LessonGraph,
@@ -10,7 +9,6 @@ from .models import (
 )
 
 __all__ = [
-    "AssessmentItem",
     "ChatMessage",
     "ConceptNode",
     "DerivedAsset",
