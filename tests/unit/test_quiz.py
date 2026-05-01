@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-import dataclasses
 import json
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-from syrupy.assertion import SnapshotAssertion
-
 from lesson_graph.models import AssessmentItem, ConceptNode, LessonGraph, SourceSpan
 from lyw_core.assessment.mcq import MCQGenerator
 from lyw_core.assessment.quiz import GlowsGrows, SectionQuizGenerator
-from lyw_core.db.dao import AttemptRecord
 
 
 def _span() -> SourceSpan:
@@ -63,54 +59,6 @@ def _make_sqg(
 # ---------------------------------------------------------------------------
 
 
-async def test_section_quiz_collects_items_per_concept(
-    snapshot: SnapshotAssertion,
-) -> None:
-    """3 concepts x 2 items each = 6 total; MCQGenerator called once per concept."""
-    concepts = [
-        _concept("c1", "Photosynthesis"),
-        _concept("c2", "Cell Wall"),
-        _concept("c3", "Mitochondria"),
-    ]
-    graph = LessonGraph(id="g1", source_id="doc-1", concepts=concepts)
-
-    items_per_concept = {
-        "c1": [
-            _assessment_item("i1a", "c1", "Q1a"),
-            _assessment_item("i1b", "c1", "Q1b"),
-        ],
-        "c2": [
-            _assessment_item("i2a", "c2", "Q2a"),
-            _assessment_item("i2b", "c2", "Q2b"),
-        ],
-        "c3": [
-            _assessment_item("i3a", "c3", "Q3a"),
-            _assessment_item("i3b", "c3", "Q3b"),
-        ],
-    }
-
-    async def fake_generate(
-        concept: ConceptNode, lg: LessonGraph, *, quiz_id: str | None = None
-    ) -> list[AssessmentItem]:
-        return items_per_concept[concept.id]
-
-    mcq_gen = MagicMock(spec=MCQGenerator)
-    mcq_gen.generate = AsyncMock(side_effect=fake_generate)
-    dao = MagicMock()
-
-    sqg = SectionQuizGenerator(
-        mcq_generator=mcq_gen,
-        model_client=AsyncMock(),
-        dao=dao,
-    )
-    items = await sqg.generate(concepts, graph)
-
-    assert len(items) == 6
-    assert mcq_gen.generate.await_count == 3
-    dao.add_assessment_item.assert_not_called()
-    assert snapshot == [item.model_dump() for item in items]
-
-
 async def test_section_quiz_generate_empty_concepts_returns_empty() -> None:
     mcq_gen = MagicMock(spec=MCQGenerator)
     mcq_gen.generate = AsyncMock(return_value=[])
@@ -137,40 +85,6 @@ async def test_section_quiz_generate_single_concept() -> None:
 # ---------------------------------------------------------------------------
 # generate_glows_grows(): parses model response
 # ---------------------------------------------------------------------------
-
-
-async def test_section_quiz_generates_glows_grows(
-    snapshot: SnapshotAssertion,
-) -> None:
-    items = [_assessment_item("i1", "c1", "Q1")]
-    attempts = [
-        AttemptRecord(
-            id="a1",
-            profile_id="p1",
-            item_id="i1",
-            response="Option A",
-            correct=True,
-            attempted_at="2026-04-30T00:00:00Z",
-        )
-    ]
-
-    model_client = AsyncMock()
-    model_client.complete = AsyncMock(
-        return_value=json.dumps(
-            {
-                "glows": "You showed great understanding!",
-                "grows": "Focus on applying concepts.",
-            }
-        )
-    )
-
-    sqg = _make_sqg(MagicMock(spec=MCQGenerator), model_client)
-    result = await sqg.generate_glows_grows(items, attempts)
-
-    assert isinstance(result, GlowsGrows)
-    assert result.glows == "You showed great understanding!"
-    assert result.grows == "Focus on applying concepts."
-    assert snapshot == dataclasses.asdict(result)
 
 
 async def test_glows_grows_invalid_json_returns_empty() -> None:

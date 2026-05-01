@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import dataclasses
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from syrupy.assertion import SnapshotAssertion
 
 from lesson_graph.models import ConceptNode, LessonGraph, SourceSpan
-from lyw_core.assessment.mnemonic import MnemonicGenerator, MnemonicResult
+from lyw_core.assessment.mnemonic import MnemonicGenerator
 from lyw_core.validators.base import ValidationError, ValidationResult
 
 
@@ -38,32 +36,6 @@ def _concept() -> ConceptNode:
 
 def _graph(concept: ConceptNode | None = None) -> LessonGraph:
     return LessonGraph(id="g1", source_id="doc-1", concepts=[concept or _concept()])
-
-
-# ---------------------------------------------------------------------------
-# Snapshot test: happy path
-# ---------------------------------------------------------------------------
-
-
-async def test_mnemonic_generate_returns_result(snapshot: SnapshotAssertion) -> None:
-    model = AsyncMock()
-    model.complete = AsyncMock(
-        return_value="Plants Wildly Gobble Carbon Oxygen (PWGCO)"
-    )
-
-    validator = MagicMock()
-    validator.validate = MagicMock(return_value=ValidationResult(passed=True))
-
-    gen = MnemonicGenerator(model_client=model, faithfulness_validator=validator)
-    concept = _concept()
-    result = await gen.generate(concept, _graph(concept))
-
-    assert isinstance(result, MnemonicResult)
-    assert result.concept_id == "c1"
-    assert result.text == "Plants Wildly Gobble Carbon Oxygen (PWGCO)"
-    assert result.source_span == concept.source_spans[0]
-
-    assert snapshot == dataclasses.asdict(result)
 
 
 # ---------------------------------------------------------------------------

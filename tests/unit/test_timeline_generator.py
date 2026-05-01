@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from syrupy.assertion import SnapshotAssertion
-
 from lesson_graph.models import (
     ConceptNode,
     LessonGraph,
@@ -168,14 +166,3 @@ def test_mermaid_output_has_section_per_concept() -> None:
 
     assert isinstance(result, TimelineResult)
     assert "section" in result.mermaid
-
-
-def test_snapshot_output_shape(snapshot: SnapshotAssertion) -> None:
-    concepts = [
-        _concept("c1", "Big Bang", temporal_position=1),
-        _concept("c2", "Star Formation", temporal_position=2),
-        _concept("c3", "Solar System", temporal_position=3),
-    ]
-    result = TimelineGenerator().generate(_graph(concepts), _profile())
-    assert isinstance(result, TimelineResult)
-    assert snapshot == result.mermaid

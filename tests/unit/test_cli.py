@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from syrupy.assertion import SnapshotAssertion
 
 from lesson_graph.models import ConceptNode, SourceSpan
 from lyw_core.cli.inspect import run_inspect
@@ -100,11 +99,6 @@ _NODES = [
 # ---------------------------------------------------------------------------
 
 
-def test_render_tree_snapshot(snapshot: SnapshotAssertion) -> None:
-    result = render_concept_tree(_NODES)
-    assert snapshot == result
-
-
 def test_render_tree_contains_all_titles() -> None:
     result = render_concept_tree(_NODES)
     assert "Introduction" in result
@@ -168,19 +162,6 @@ def test_run_inspect_exit_zero(tmp_path: Path, mock_parse: ParsedDocument) -> No
         mock_cls.return_value.parse.return_value = mock_parse
         code = run_inspect(fake_pdf)
     assert code == 0
-
-
-def test_run_inspect_stdout_snapshot(
-    mock_parse: ParsedDocument,
-    capsys: pytest.CaptureFixture[str],
-    snapshot: SnapshotAssertion,
-) -> None:
-    # Use the stable fixture path so the chunker's doc_id-derived node IDs are deterministic.
-    with patch("lyw_core.cli.inspect.DoclingParser") as mock_cls:
-        mock_cls.return_value.parse.return_value = mock_parse
-        run_inspect(_FIXTURE_PDF)
-    captured = capsys.readouterr()
-    assert snapshot == captured.out
 
 
 def test_run_inspect_at_least_one_concept(

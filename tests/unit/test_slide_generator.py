@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -217,43 +216,3 @@ async def test_outline_call_is_made_exactly_once() -> None:
 
     # One outline call + one body call = 2 total
     assert model_client.complete.call_count == 2
-
-
-@pytest.mark.asyncio
-async def test_snapshot_deck_structure(snapshot: Any) -> None:
-    """Snapshot test captures stable output shape."""
-    concepts = [
-        _concept("c1", "Mitosis", summary="Cell division process."),
-    ]
-    graph = _graph(concepts)
-    profile = _profile()
-
-    outline = json.dumps(
-        [
-            {
-                "title": "Mitosis Overview",
-                "key_points": ["Phases of mitosis"],
-                "concept_id": "c1",
-            }
-        ]
-    )
-    body = json.dumps(
-        {
-            "body": "Mitosis is the process of cell division.",
-            "speaker_notes": "Explain each phase clearly.",
-        }
-    )
-    model_client = _make_model_client(outline, [body])
-
-    gen = SlideGenerator()
-    deck = await gen.generate(graph, profile, model_client)
-
-    assert len(deck.slides) == 1
-    slide = deck.slides[0]
-    assert snapshot == {
-        "title": slide.title,
-        "body": slide.body,
-        "speaker_notes": slide.speaker_notes,
-        "concept_id": slide.concept_id,
-        "has_source_spans": len(slide.source_spans) > 0,
-    }

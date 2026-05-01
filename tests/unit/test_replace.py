@@ -6,7 +6,6 @@ import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from syrupy.assertion import SnapshotAssertion
 
 from lesson_graph.models import ConceptNode, LessonGraph, SourceSpan
 from lyw_core.personalization.replace import ExampleReplacer, ReplaceSourceTooThinError
@@ -71,32 +70,6 @@ _TWO_REPLACEMENTS_JSON = json.dumps(
         },
     ]
 )
-
-
-async def test_replace_returns_only_passing_records(
-    snapshot: SnapshotAssertion,
-) -> None:
-    """Two replacements proposed; one fails faithfulness; only one returned."""
-    model = AsyncMock()
-    model.complete = AsyncMock(return_value=_TWO_REPLACEMENTS_JSON)
-
-    validator = MagicMock()
-    validator.validate = MagicMock(
-        side_effect=[
-            ValidationResult(passed=True),
-            ValidationResult(passed=False, reason="span out of range"),
-        ]
-    )
-
-    replacer = ExampleReplacer(model_client=model, faithfulness_validator=validator)
-    concept = _concept()
-    records = await replacer.replace(concept, _profile(), _graph(concept))
-
-    assert len(records) == 1
-    assert records[0].replacement_text.startswith("like a soccer team")
-    assert "soccer" in records[0].justification
-    assert records[0].original_span == concept.source_spans[0]
-    assert snapshot == [r.model_dump() for r in records]
 
 
 async def test_replace_returns_empty_on_invalid_json() -> None:

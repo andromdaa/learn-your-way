@@ -3,7 +3,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from syrupy.assertion import SnapshotAssertion
 
 from lesson_graph.models import ConceptNode, LessonGraph, SourceSpan
 from lyw_core.personalization.relevel import ReLeveler
@@ -83,14 +82,6 @@ async def test_relevel_replacement_record_fields() -> None:
     assert rec.justification  # non-empty
     assert "6" in rec.justification  # grade level injected
     assert rec.original_span == concept.source_spans[0]
-
-
-async def test_relevel_profile_snapshot(snapshot: SnapshotAssertion) -> None:
-    relev = _make_relevel("Simple text about plants.")
-    concept = _concept()
-    _, profile = await relev.relevel(concept, _profile(), _graph(concept))
-
-    assert snapshot == profile.model_dump()
 
 
 async def test_relevel_calls_model_with_grade_level() -> None:

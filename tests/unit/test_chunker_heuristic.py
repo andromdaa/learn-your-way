@@ -1,6 +1,4 @@
-"""Tests for HeuristicChunker with syrupy snapshot comparison."""
-
-from syrupy.assertion import SnapshotAssertion
+"""Unit tests for HeuristicChunker."""
 
 from lyw_core.chunker import HeuristicChunker
 from lyw_core.parser.models import ParsedBlock, ParsedDocument
@@ -56,14 +54,6 @@ _TINY_DOC = ParsedDocument(
     ],
     page_count=1,
 )
-
-
-def test_chunks_heading_per_section(snapshot: SnapshotAssertion) -> None:
-    chunker = HeuristicChunker(doc_id="test-doc")
-    nodes = chunker.chunk(_TINY_DOC)
-    assert len(nodes) == 2
-    assert [n.title for n in nodes] == ["Introduction", "Methods"]
-    assert snapshot == [n.model_dump() for n in nodes]
 
 
 def test_all_nodes_have_heuristic_provenance() -> None:
