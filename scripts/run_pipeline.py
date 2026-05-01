@@ -27,8 +27,8 @@ import httpx
 
 _BASE = "http://localhost:8000"
 _API_READY_TIMEOUT = 30
-_INGEST_TIMEOUT = 300   # seconds — Docling parse can be slow first run
-_GEN_TIMEOUT = 180      # seconds per concept
+_INGEST_TIMEOUT = 300  # seconds — Docling parse can be slow first run
+_GEN_TIMEOUT = 180  # seconds per concept
 
 
 # ---------------------------------------------------------------------------
@@ -73,14 +73,15 @@ def _preflight(pdf: Path, redis_url: str, ollama_url: str) -> None:
         )
 
     if not _tcp_ok("localhost", 6333):
-        sys.exit("Qdrant unreachable at localhost:6333\n  Is `docker compose up -d` running?")
+        sys.exit(
+            "Qdrant unreachable at localhost:6333\n  Is `docker compose up -d` running?"
+        )
 
     try:
         httpx.get(f"{ollama_url}/api/tags", timeout=5).raise_for_status()
     except Exception:
         sys.exit(
-            f"Ollama unreachable at {ollama_url}\n"
-            "  Is `docker compose up -d` running?"
+            f"Ollama unreachable at {ollama_url}\n  Is `docker compose up -d` running?"
         )
 
     print(f"[preflight] PDF found; Redis, Qdrant, Ollama reachable")
@@ -168,9 +169,21 @@ def _teardown(procs: list[subprocess.Popen]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--pdf", type=Path, default=Path("chapter.pdf"), help="Path to the PDF to ingest (default: ./chapter.pdf)")
-    parser.add_argument("--concepts", default="first", metavar="first|all|N", help="How many concepts to generate text for (default: first)")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--pdf",
+        type=Path,
+        default=Path("chapter.pdf"),
+        help="Path to the PDF to ingest (default: ./chapter.pdf)",
+    )
+    parser.add_argument(
+        "--concepts",
+        default="first",
+        metavar="first|all|N",
+        help="How many concepts to generate text for (default: first)",
+    )
     args = parser.parse_args()
 
     redis_url = "redis://localhost:6379/0"
@@ -179,6 +192,7 @@ def main() -> None:
     db_path = Path("./data/lyw.db")
     try:
         from lyw_core.settings import Settings
+
         s = Settings()
         redis_url = str(s.redis_url)
         ollama_url = str(s.ollama_base_url)
@@ -197,8 +211,25 @@ def main() -> None:
     procs: list[subprocess.Popen] = []
     try:
         # uvicorn is not a project dependency, so resolve it on the fly via `uv run --with uvicorn`.
-        procs.append(subprocess.Popen(["uv", "run", "--with", "uvicorn", "uvicorn", "lyw_core.api.app:app", "--port", "8000"]))
-        procs.append(subprocess.Popen([sys.executable, "-m", "arq", "lyw_core.worker.settings.WorkerSettings"]))
+        procs.append(
+            subprocess.Popen(
+                [
+                    "uv",
+                    "run",
+                    "--with",
+                    "uvicorn",
+                    "uvicorn",
+                    "lyw_core.api.app:app",
+                    "--port",
+                    "8000",
+                ]
+            )
+        )
+        procs.append(
+            subprocess.Popen(
+                [sys.executable, "-m", "arq", "lyw_core.worker.settings.WorkerSettings"]
+            )
+        )
         print(f"[boot] uvicorn PID {procs[0].pid}, arq PID {procs[1].pid}")
 
         with httpx.Client() as client:
@@ -222,7 +253,9 @@ def main() -> None:
             print(f"[ingest] Complete — {len(concepts)} concept(s) found")
 
             if not concepts:
-                sys.exit("No concepts extracted from PDF — check the Docling parse logs above.")
+                sys.exit(
+                    "No concepts extracted from PDF — check the Docling parse logs above."
+                )
 
             # Create learner profile
             pr = client.post(
@@ -240,7 +273,9 @@ def main() -> None:
 
             # Generate replace text
             selected = _select_concepts(concepts, args.concepts)
-            print(f"[generate] Generating replace text for {len(selected)} of {len(concepts)} concept(s) …")
+            print(
+                f"[generate] Generating replace text for {len(selected)} of {len(concepts)} concept(s) …"
+            )
             for concept in selected:
                 text = _generate_concept(client, lesson_id, concept, profile_id)
                 title = concept.get("title", concept["id"])

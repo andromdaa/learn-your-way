@@ -143,3 +143,79 @@ async def test_shutdown_closes_db() -> None:
     db = AsyncMock()
     await shutdown({"db": db})
     db.close.assert_awaited_once()
+
+
+def _make_concept_no_spans(cid: str = "c_no_spans") -> ConceptNode:
+    """Create a ConceptNode with no source_spans by bypassing Pydantic validation."""
+    concept = ConceptNode.model_construct(
+        id=cid,
+        title="Spanless Concept",
+        summary="A concept with no source spans",
+        learning_objective="Understand nothing",
+        source_spans=[],
+        prerequisites=[],
+        provenance="heuristic",
+        temporal_position=None,
+    )
+    return concept
+
+
+@pytest.mark.asyncio
+async def test_ingest_drops_concepts_with_no_source_spans(
+    fake_ctx: dict[str, Any], tmp_path: Path
+) -> None:
+    """Concepts with empty source_spans are dropped before upsert."""
+    from lyw_core.worker.jobs.ingest import ingest_source
+
+    pdf = tmp_path / "test.pdf"
+    pdf.write_bytes(b"%PDF-1.4")
+
+    good_concept = _make_concept("c1")
+    bad_concept = _make_concept_no_spans("c_bad")
+    concepts = [good_concept, bad_concept]
+
+    with (
+        patch("lyw_core.worker.jobs.ingest.DoclingParser") as mock_parser,
+        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as mock_chunker,
+        patch("lyw_core.worker.jobs.ingest.QdrantIndexer"),
+    ):
+        mock_parser.return_value.parse.return_value = MagicMock()
+        mock_chunker.return_value.chunk.return_value = concepts
+
+        result = await ingest_source(fake_ctx, source_path=str(pdf), doc_id="doc1")
+
+    # Only the good concept reaches the store
+    db: AsyncMock = fake_ctx["db"]
+    db.upsert_lesson_graph.assert_awaited_once()
+    graph: LessonGraph = db.upsert_lesson_graph.call_args[0][0]
+    assert len(graph.concepts) == 1
+    assert graph.concepts[0].id == "c1"
+    # concept count reflects the filtered count
+    assert result["concept_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_ingest_all_concepts_dropped_produces_empty_graph(
+    fake_ctx: dict[str, Any], tmp_path: Path
+) -> None:
+    """If all concepts have no source_spans, the graph is stored with 0 concepts."""
+    from lyw_core.worker.jobs.ingest import ingest_source
+
+    pdf = tmp_path / "test.pdf"
+    pdf.write_bytes(b"%PDF-1.4")
+    bad_concepts = [_make_concept_no_spans("c1"), _make_concept_no_spans("c2")]
+
+    with (
+        patch("lyw_core.worker.jobs.ingest.DoclingParser") as mock_parser,
+        patch("lyw_core.worker.jobs.ingest.HeuristicChunker") as mock_chunker,
+        patch("lyw_core.worker.jobs.ingest.QdrantIndexer"),
+    ):
+        mock_parser.return_value.parse.return_value = MagicMock()
+        mock_chunker.return_value.chunk.return_value = bad_concepts
+
+        result = await ingest_source(fake_ctx, source_path=str(pdf), doc_id="doc1")
+
+    db: AsyncMock = fake_ctx["db"]
+    graph: LessonGraph = db.upsert_lesson_graph.call_args[0][0]
+    assert graph.concepts == []
+    assert result["concept_count"] == 0

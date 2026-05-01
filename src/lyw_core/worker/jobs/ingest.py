@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
+import structlog
 from qdrant_client import QdrantClient
 
 from lesson_graph.models import LessonGraph
@@ -16,6 +17,8 @@ from lyw_core.retrieval.bm25 import BM25Retriever
 from lyw_core.retrieval.embedding import EmbeddingModel
 from lyw_core.retrieval.qdrant import QdrantIndexer
 from lyw_core.settings import Settings
+
+log = structlog.get_logger()
 
 
 async def startup(ctx: dict[str, Any]) -> None:
@@ -47,7 +50,21 @@ async def ingest_source(
         await db.add_source(doc_id=doc_id, path=source_path, sha256=sha256)
 
     parsed = DoclingParser().parse(Path(source_path))
-    concepts = HeuristicChunker(doc_id=doc_id).chunk(parsed)
+    raw_concepts = HeuristicChunker(doc_id=doc_id).chunk(parsed)
+
+    # Source fidelity: every concept must trace to at least one source span.
+    # Drop concepts with no source spans rather than persisting invalid data.
+    concepts = []
+    for concept in raw_concepts:
+        if not concept.source_spans:
+            log.warning(
+                "ingest.concept_dropped_no_source_spans",
+                concept_id=concept.id,
+                concept_title=concept.title,
+                doc_id=doc_id,
+            )
+        else:
+            concepts.append(concept)
 
     lesson_id = f"lesson_{doc_id}"
     graph = LessonGraph(id=lesson_id, source_id=doc_id, concepts=concepts)

@@ -432,3 +432,108 @@ async def test_get_items_by_quiz_id_empty_for_unknown() -> None:
     result = await db.get_items_by_quiz_id("no-such-quiz")
     assert result == []
     await db.close()
+
+
+# ---------------------------------------------------------------------------
+# DAO resilience: get_lesson_graph skips invalid rows (issue #65)
+# ---------------------------------------------------------------------------
+
+
+async def _insert_concept_without_spans(
+    db: Database, lesson_id: str, concept_id: str
+) -> None:
+    """Insert a concept row with no source_spans to simulate a legacy bad row."""
+    await db._conn.execute(
+        """
+        INSERT INTO concepts
+            (id, lesson_id, title, summary, learning_objective, prerequisites)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (concept_id, lesson_id, "Bad Concept", "Bad summary", "Bad obj", "[]"),
+    )
+    await db._conn.commit()
+    # Deliberately insert NO rows into source_spans for this concept.
+
+
+async def test_get_lesson_graph_skips_concept_with_no_source_spans() -> None:
+    """get_lesson_graph skips concepts whose stored rows have no source spans.
+
+    This guards the DAO against legacy data that violated the source-fidelity
+    invariant (issue #65).  One bad row must not prevent the rest of the lesson
+    from loading.
+    """
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+
+    # Insert the lesson row directly (bypass upsert to avoid schema validation)
+    await db._conn.execute(
+        "INSERT INTO lessons (id, source_id) VALUES (?, ?)",
+        ("g1", "src-1"),
+    )
+    await db._conn.commit()
+
+    # Good concept with a span
+    good = _concept("c_good", [_span()])
+    await db._conn.execute(
+        """
+        INSERT INTO concepts
+            (id, lesson_id, title, summary, learning_objective, prerequisites)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            good.id,
+            "g1",
+            good.title,
+            good.summary,
+            good.learning_objective,
+            "[]",
+        ),
+    )
+    await db._conn.commit()
+    for span in good.source_spans:
+        await db._conn.execute(
+            """
+            INSERT INTO source_spans
+                (concept_id, doc_id, page_start, page_end, char_start, char_end)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                good.id,
+                span.doc_id,
+                span.page_start,
+                span.page_end,
+                span.char_start,
+                span.char_end,
+            ),
+        )
+    await db._conn.commit()
+
+    # Bad concept with no spans
+    await _insert_concept_without_spans(db, "g1", "c_bad")
+
+    retrieved = await db.get_lesson_graph("g1")
+    assert retrieved is not None
+    # Only the valid concept is returned; the bad one is silently skipped
+    assert len(retrieved.concepts) == 1
+    assert retrieved.concepts[0].id == good.id
+    await db.close()
+
+
+async def test_get_lesson_graph_all_bad_returns_empty_concepts() -> None:
+    """get_lesson_graph returns a graph with no concepts when all rows are invalid."""
+    db = await Database.connect(":memory:")
+    await db.add_source("src-1", "/data/src.pdf", "sha1")
+
+    await db._conn.execute(
+        "INSERT INTO lessons (id, source_id) VALUES (?, ?)",
+        ("g1", "src-1"),
+    )
+    await db._conn.commit()
+
+    await _insert_concept_without_spans(db, "g1", "c_bad1")
+    await _insert_concept_without_spans(db, "g1", "c_bad2")
+
+    retrieved = await db.get_lesson_graph("g1")
+    assert retrieved is not None
+    assert retrieved.concepts == []
+    await db.close()
