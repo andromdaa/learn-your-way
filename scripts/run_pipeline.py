@@ -175,19 +175,29 @@ def main() -> None:
 
     redis_url = "redis://localhost:6379/0"
     ollama_url = "http://localhost:11434"
+    data_dir = Path("./data")
+    db_path = Path("./data/lyw.db")
     try:
         from lyw_core.settings import Settings
         s = Settings()
         redis_url = str(s.redis_url)
         ollama_url = str(s.ollama_base_url)
+        data_dir = Path(s.data_dir)
+        db_path = Path(s.db_path)
     except Exception:
         pass
 
     _preflight(args.pdf, redis_url, ollama_url)
 
+    # Pre-create data dir so the worker's SQLite connect doesn't race the API's
+    # DataDir.bootstrap() at lifespan startup.
+    data_dir.mkdir(parents=True, exist_ok=True)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
     procs: list[subprocess.Popen] = []
     try:
-        procs.append(subprocess.Popen([sys.executable, "-m", "uvicorn", "lyw_core.api.app:app", "--port", "8000"]))
+        # uvicorn is not a project dependency, so resolve it on the fly via `uv run --with uvicorn`.
+        procs.append(subprocess.Popen(["uv", "run", "--with", "uvicorn", "uvicorn", "lyw_core.api.app:app", "--port", "8000"]))
         procs.append(subprocess.Popen([sys.executable, "-m", "arq", "lyw_core.worker.settings.WorkerSettings"]))
         print(f"[boot] uvicorn PID {procs[0].pid}, arq PID {procs[1].pid}")
 
