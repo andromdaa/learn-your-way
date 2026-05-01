@@ -36,7 +36,7 @@ class GenerateResponse(BaseModel):
 
 class GenerateResultResponse(BaseModel):
     job_id: str
-    status: str  # "pending" | "complete" | "not_found"
+    status: str  # "pending" | "complete" | "not_found" | "failed"
     result: dict[str, Any] | None = None
 
 
@@ -107,6 +107,14 @@ async def get_generate_result(
 
     # Job is complete — retrieve the stored result payload
     info = await job.result_info()
+
+    if info is not None and not info.success:
+        return GenerateResultResponse(
+            job_id=job_id,
+            status="failed",
+            result={"error": repr(info.result)},
+        )
+
     result: dict[str, Any] | None = None
     if info is not None and info.result is not None:
         result = dict(info.result)
