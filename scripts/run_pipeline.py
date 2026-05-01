@@ -16,8 +16,8 @@ there before running, e.g.:
 from __future__ import annotations
 
 import argparse
-import subprocess
 import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -84,7 +84,7 @@ def _preflight(pdf: Path, redis_url: str, ollama_url: str) -> None:
             f"Ollama unreachable at {ollama_url}\n  Is `docker compose up -d` running?"
         )
 
-    print(f"[preflight] PDF found; Redis, Qdrant, Ollama reachable")
+    print("[preflight] PDF found; Redis, Qdrant, Ollama reachable")
 
 
 def _wait_api_ready(client: httpx.Client) -> None:

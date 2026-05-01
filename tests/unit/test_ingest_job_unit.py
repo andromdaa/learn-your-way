@@ -219,3 +219,50 @@ async def test_ingest_all_concepts_dropped_produces_empty_graph(
     graph: LessonGraph = db.upsert_lesson_graph.call_args[0][0]
     assert graph.concepts == []
     assert result["concept_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_shutdown_no_db_key_does_not_raise() -> None:
+    """Shutdown must not raise KeyError when startup failed before db was set."""
+    from lyw_core.worker.jobs.ingest import shutdown
+
+    # ctx has no "db" key — simulates a partially-initialized context
+    await shutdown({})
+
+
+@pytest.mark.asyncio
+async def test_startup_bootstraps_data_dir(tmp_path: Path) -> None:
+    """startup() must call DataDir.bootstrap() before Database.connect()."""
+    from lyw_core.worker.jobs.ingest import startup
+
+    mock_db = AsyncMock()
+    mock_data_dir = MagicMock()
+
+    with (
+        patch(
+            "lyw_core.worker.jobs.ingest.Settings",
+            return_value=MagicMock(
+                db_path=tmp_path / "lyw.db",
+                data_dir=tmp_path,
+                qdrant_url="http://localhost:6333",
+            ),
+        ),
+        patch(
+            "lyw_core.worker.jobs.ingest.DataDir",
+            return_value=mock_data_dir,
+        ) as mock_data_dir_cls,
+        patch(
+            "lyw_core.worker.jobs.ingest.Database.connect",
+            new_callable=AsyncMock,
+            return_value=mock_db,
+        ),
+        patch("lyw_core.worker.jobs.ingest.QdrantClient"),
+        patch("lyw_core.worker.jobs.ingest.EmbeddingModel"),
+        patch("lyw_core.worker.jobs.ingest.BM25Retriever"),
+    ):
+        ctx: dict[str, Any] = {}
+        await startup(ctx)
+
+    mock_data_dir_cls.assert_called_once()
+    mock_data_dir.bootstrap.assert_called_once()
+    assert ctx["db"] is mock_db
